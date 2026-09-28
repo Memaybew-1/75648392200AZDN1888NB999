@@ -1,4 +1,4 @@
-Language: 
+#Language: 
 
 [T]
 Ta = "Xúc giác"
@@ -47,7 +47,7 @@ Fu = "Tương lai"
 Fe = "Thường xuyên"
 Fi = "Kết thúc"
 Fo = "Lực"
-Fw = "Chính thức"
+Fa = "Chính thức"
 
 [H]
 He = "Thính giác"
@@ -60,8 +60,8 @@ Hu = "Nhân tạo"
 Vi = "Thị giác"
 Vo = "Giọng/Lồng tiếng"
 Va = "Giá trị"
-Vw = "Chuyên sâu"
-Vl = "Liên kết"
+Vu = "Chuyên sâu"
+Ve = "Liên kết"
 
 [B]
 Be = "Của"
@@ -82,7 +82,7 @@ Mu = "Nhiều"
 Mo = "Chuyển động"
 Me = "Độ đo"
 Mi = "Giữa"
-Mw = "Bí mật/Riêu tư"
+Ma = "Bí mật/Riêu tư"
 
 [E]
 Er = "Tác nhân (người/vật làm)"
@@ -96,21 +96,21 @@ Le = "Nhỏ/Giảm"
 Li = "Giống"
 Lo = "Để/Mục đích"
 La = "Xa"
-Lw = "Độc lập"
+Lu = "Độc lập"
 
 [R]
 Re = "Lại/Nhắc lại"
 Ri = "Ngược lại"
 Ro = "Vòng tròn"
 Ra = "Hướng/Chiều"
-Rw = "Động lực"
+Ru = "Động lực"
 
 [D]
 Do = "Kép/Đôi"
 Di = "Khác biệt"
 De = "Hạ/Giảm"
 Da = "Cho phép"
-Dw = "Động"
+Du = "Động"
 
 [C]
 Ce = "Tập trung"
@@ -124,14 +124,14 @@ Ga = "Tăng"
 Go = "Đi"
 Ge = "Thế hệ"
 Gi = "Quà tặng"
-Gw = "Xoay"
+Gu = "Xoay"
 
 [K]
 Ka = "Khóa"
 Ko = "Ổn định"
 Ke = "Giữ"
 Ki = "Sắc cảnh"
-Kw = "Biết"
+Ku = "Biết"
 
 [W]
 Wa = "Cảnh báo"
