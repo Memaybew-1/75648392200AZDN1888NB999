@@ -1,0 +1,24 @@
+{
+  "keyValuePairs": {
+    "hello": "xin chào",
+    "world": "thế giới",
+    "cat": "mèo",
+    "dog": "chó",
+    "apple": "táo",
+    "orange": "cam",
+    "good": "tốt",
+    "bad": "xấu",
+    "happy": "vui",
+    "sad": "buồn",
+    "water": "nước",
+    "fire": "lửa",
+    "earth": "đất",
+    "air": "không khí",
+    "sun": "mặt trời",
+    "moon": "mặt trăng",
+    "star": "ngôi sao",
+    "night": "đêm",
+    "day": "ngày",
+    "food": "thức ăn"
+  }
+}
