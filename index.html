@@ -3,316 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot Key-Value</title>
+    <title>Simple Chatbot JSON-driven</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
         }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+        .chat-header { 
+            background: #0084ff; 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            font-size: 18px; 
+            font-weight: bold; 
         }
-
-        .container {
-            width: 100%;
-            max-width: 600px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 600px;
+        .chat-container { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
         }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
+        .message { 
+            max-width: 75%; 
+            padding: 10px 15px; 
+            border-radius: 15px; 
+            line-height: 1.4; 
+            word-wrap: break-word; 
         }
-
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
+        .message.user { 
+            background: #0084ff; 
+            color: white; 
+            align-self: flex-end; 
+            border-bottom-right-radius: 3px; 
         }
-
-        .header p {
-            font-size: 12px;
-            opacity: 0.9;
+        .message.bot { 
+            background: #e4e6eb; 
+            color: black; 
+            align-self: flex-start; 
+            border-bottom-left-radius: 3px; 
         }
-
-        .chat-box {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f5f5f5;
+        .chat-input-area { 
+            display: flex; 
+            padding: 10px; 
+            background: white; 
+            border-top: 1px solid #ddd; 
         }
-
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-            animation: slideIn 0.3s ease;
+        .chat-input-area input { 
+            flex: 1; 
+            padding: 10px 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 20px; 
+            outline: none; 
+            font-size: 14px; 
         }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .chat-input-area button { 
+            background: #0084ff; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin-left: 8px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-weight: bold; 
         }
-
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message-content {
-            max-width: 70%;
-            padding: 12px 15px;
-            border-radius: 12px;
-            word-wrap: break-word;
-        }
-
-        .user .message-content {
-            background: #667eea;
-            color: white;
-            border-bottom-right-radius: 3px;
-        }
-
-        .bot .message-content {
-            background: white;
-            color: #333;
-            border: 1px solid #ddd;
-            border-bottom-left-radius: 3px;
-        }
-
-        .input-area {
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #ddd;
-            display: flex;
-            gap: 10px;
-        }
-
-        .input-area input {
-            flex: 1;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .input-area input:focus {
-            border-color: #667eea;
-        }
-
-        .input-area button {
-            padding: 12px 25px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-
-        .input-area button:hover {
-            background: #764ba2;
-        }
-
-        .input-area button:active {
-            transform: scale(0.95);
-        }
-
-        .error {
-            color: #e74c3c;
-            font-weight: 600;
-        }
-
-        .success {
-            color: #27ae60;
-            font-weight: 600;
-        }
-
-        .info-text {
-            font-size: 12px;
-            color: #999;
-            margin-top: 5px;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #999;
-            padding: 40px 20px;
-            font-size: 14px;
+        .chat-input-area button:hover { 
+            background: #006edd; 
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 Chatbot Key-Value</h1>
-            <p>Nhập key để lấy value, hoặc random nếu không hợp lệ</p>
-        </div>
 
-        <div class="chat-box" id="chatBox">
-            <div class="empty-state">
-                👋 Xin chào! Nhập một key để bắt đầu...
-            </div>
-        </div>
+    <div class="chat-header">SimpleBot Assistant</div>
+    
+    <div class="chat-container" id="chatContainer">
+        <div class="message bot">Xin chào! Đang tải dữ liệu từ data.json...</div>
+    </div>
 
-        <div class="input-area">
-            <input 
-                type="text" 
-                id="userInput" 
-                placeholder="Nhập key (ví dụ: hello, cat, apple...)" 
-                autocomplete="off"
-            >
-            <button id="sendBtn">Gửi</button>
-        </div>
+    <div class="chat-input-area">
+        <input type="text" id="userInput" placeholder="Nhập tin nhắn của bạn..." autocomplete="off">
+        <button id="sendBtn">Gửi</button>
     </div>
 
     <script>
-        // Data - Lưu trữ key-value pairs
-        const keyValueData = {
-            "hello": "xin chào",
-            "world": "thế giới",
-            "cat": "mèo",
-            "dog": "chó",
-            "apple": "táo",
-            "orange": "cam",
-            "good": "tốt",
-            "bad": "xấu",
-            "happy": "vui",
-            "sad": "buồn",
-            "water": "nước",
-            "fire": "lửa",
-            "earth": "đất",
-            "air": "không khí",
-            "sun": "mặt trời",
-            "moon": "mặt trăng",
-            "star": "ngôi sao",
-            "night": "đêm",
-            "day": "ngày",
-            "food": "thức ăn"
-        };
-
-        const chatBox = document.getElementById('chatBox');
+        let chatbotData = null;
+        const chatContainer = document.getElementById('chatContainer');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
 
-        // Lấy random value từ data
-        function getRandomValue() {
-            const values = Object.values(keyValueData);
-            return values[Math.floor(Math.random() * values.length)];
-        }
-
-        // Kiểm tra key và trả về value
-        function processKey(key) {
-            const trimmedKey = key.trim().toLowerCase();
-
-            if (trimmedKey === '') {
-                return {
-                    valid: false,
-                    value: "Vui lòng nhập một key!",
-                    type: "empty"
+        // Hàm tải file data.json bất đồng bộ
+        async function loadChatbotData() {
+            try {
+                const response = await fetch('data.json');
+                if (!response.ok) throw new Error('Không thể tải file data.json');
+                chatbotData = await response.json();
+                
+                chatContainer.innerHTML = '<div class="message bot">Xin chào! Tôi đã sẵn sàng trò chuyện cùng bạn.</div>';
+            } catch (error) {
+                console.warn('Lỗi CORS hoặc không tìm thấy file, chuyển sang dùng dữ liệu dự phòng:', error);
+                
+                chatbotData = {
+                    "intents": [
+                        {
+                            "patterns": ["chào", "hi", "hello"],
+                            "responses": [
+                                "Chào bạn! (Chế độ dự phòng do chưa chạy qua Local Server).",
+                                "Hãy chạy qua Local Server để nạp file data.json đầy đủ nhé!"
+                            ]
+                        }
+                    ]
                 };
-            }
-
-            if (keyValueData.hasOwnProperty(trimmedKey)) {
-                return {
-                    valid: true,
-                    value: keyValueData[trimmedKey],
-                    type: "found"
-                };
-            } else {
-                return {
-                    valid: false,
-                    value: getRandomValue(),
-                    type: "notfound"
-                };
+                
+                chatContainer.innerHTML = '<div class="message bot">⚠️ Đang chạy ở chế độ dự phòng. Hãy dùng Local Server để load data.json chuẩn xác!</div>';
             }
         }
 
-        // Hiển thị tin nhắn
-        function displayMessage(text, isUser, resultType = null) {
-            if (chatBox.innerHTML.includes('👋')) {
-                chatBox.innerHTML = '';
-            }
+        loadChatbotData();
 
+        function appendMessage(sender, text) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-
-            if (isUser) {
-                contentDiv.textContent = text;
-            } else {
-                contentDiv.innerHTML = text;
-            }
-
-            messageDiv.appendChild(contentDiv);
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            messageDiv.classList.add('message', sender);
+            messageDiv.textContent = text;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Xử lý gửi tin nhắn
-        function sendMessage() {
-            const inputValue = userInput.value;
+        function handleUserMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
 
-            if (inputValue.trim() === '') return;
-
-            // Hiển thị tin nhắn của user
-            displayMessage(inputValue, true);
-
-            // Xử lý key
-            const result = processKey(inputValue);
-
-            // Tạo phản hồi từ bot
-            let botResponse = '';
-            if (result.type === 'found') {
-                botResponse = `<span class="success">✓ Tìm thấy!</span><br>Key: <strong>${inputValue.trim().toLowerCase()}</strong><br>Value: <strong>${result.value}</strong><br><span class="info-text">Đây là giá trị chính xác từ database</span>`;
-            } else if (result.type === 'notfound') {
-                botResponse = `<span class="error">✗ Key không tồn tại!</span><br>Key: <strong>${inputValue.trim().toLowerCase()}</strong><br>Random Value: <strong>${result.value}</strong><br><span class="info-text">Key không hợp lệ, đã random 1 value</span>`;
-            } else if (result.type === 'empty') {
-                botResponse = `<span class="error">⚠ ${result.value}</span>`;
-            }
-
-            // Hiển thị phản hồi sau 500ms
-            setTimeout(() => {
-                displayMessage(botResponse, false, result.type);
-            }, 500);
-
+            appendMessage('user', text);
             userInput.value = '';
-            userInput.focus();
+
+            setTimeout(() => {
+                const botReply = findBotResponse(text);
+                appendMessage('bot', botReply);
+            }, 300);
         }
 
-        // Event listeners
-        sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => {
+        function findBotResponse(input) {
+            if (!chatbotData || !chatbotData.intents) return "Hệ thống đang khởi tạo dữ liệu, vui lòng đợi giây lát...";
+
+            const lowerInput = input.toLowerCase();
+            
+            // 1. Kiểm tra khớp các patterns trong intents
+            for (let item of chatbotData.intents) {
+                for (let pattern of item.patterns) {
+                    if (lowerInput.includes(pattern.toLowerCase())) {
+                        const responses = item.responses;
+                        return responses[Math.floor(Math.random() * responses.length)];
+                    }
+                }
+            }
+
+            // 2. Không khớp key nào -> Gom toàn bộ các giá trị responses từ mọi intent trong file
+            let allResponses = [];
+            for (let item of chatbotData.intents) {
+                if (item.responses && Array.isArray(item.responses)) {
+                    allResponses = allResponses.concat(item.responses);
+                }
+            }
+
+            if (allResponses.length === 0) {
+                return "Xin lỗi, tôi chưa hiểu ý bạn.";
+            }
+
+            // Random ngẫu nhiên 1 value bất kỳ trong toàn bộ kho responses
+            return allResponses[Math.floor(Math.random() * allResponses.length)];
+        }
+
+        sendBtn.addEventListener('click', handleUserMessage);
+        userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                sendMessage();
+                handleUserMessage();
             }
         });
-
-        userInput.focus();
     </script>
 </body>
 </html>

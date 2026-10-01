@@ -1,6 +1,195 @@
 {
-  "keyValuePairs": {
-    "xin chào": "Xin chào bạn, tôi có thể giúp gì cho bạn?",
-    "giúp gì?": "Bạn có thể thử hỏi xem"
-  }
+  "intents": [
+    {
+      "patterns": ["chào", "hi", "hello", "chao", "xin chào", "hey", "hè lô"],
+      "responses": [
+        "Chào bạn! Rất vui được trò chuyện với bạn hôm nay.",
+        "Xin chào! Tôi có thể hỗ trợ gì cho bạn?",
+        "Hello bạn! Bạn cần giúp gì cứ nói nhé."
+      ]
+    },
+    {
+      "patterns": ["tên bạn là gì", "bạn tên gì", "mày tên gì", "ai tạo ra mày", "bạn là ai"],
+      "responses": [
+        "Mình là một trợ lý ảo đơn giản, được thiết kế để hỗ trợ bạn qua giao diện web.",
+        "Tôi là chatbot hỗ trợ được xây dựng bằng HTML và JavaScript thuần!"
+      ]
+    },
+    {
+      "patterns": ["thời tiết", "trời hôm nay thế nào", "nắng hay mưa"],
+      "responses": [
+        "Tiếc quá, tôi chưa được kết nối với trạm khí tượng nên chưa biết thời tiết lúc này ra sao. Bạn nhớ xem app thời tiết nhé!",
+        "Tôi là trợ lý ảo trong máy nên không nhìn thấy trời bên ngoài được, hihi."
+      ]
+    },
+    {
+      "patterns": ["làm được gì", "tính năng", "bạn biết làm gì", "chức năng"],
+      "responses": [
+        "Tôi có thể trò chuyện cơ bản, trả lời các câu hỏi theo từ khóa có sẵn trong hệ thống dữ liệu JSON.",
+        "Hiện tại tôi có thể giao tiếp cơ bản với các câu lệnh chào hỏi, giới thiệu bản thân hoặc trò chuyện qua lại."
+      ]
+    },
+    {
+      "patterns": ["cảm ơn", "thanks", "thank you", "tks"],
+      "responses": [
+        "Không có gì! Rất vui vì được giúp đỡ bạn.",
+        "Dạ vâng, có gì cần cứ gọi tôi nhé!",
+        "Luôn sẵn sàng hỗ trợ bạn!"
+      ]
+    },
+    {
+      "patterns": ["tạm biệt", "bye", "hẹn gặp lại", "bai bai", "goodbye"],
+      "responses": [
+        "Tạm biệt bạn! Chúc bạn một ngày làm việc hiệu quả.",
+        "Hẹn gặp lại bạn sau nhé! Bye bye!"
+      ]
+    },
+        {
+      "patterns": ["nhạc", "nghe nhạc", "bài hát", "ca sĩ", "âm nhạc"],
+      "responses": [
+        "Âm nhạc là liều thuốc tinh thần tuyệt vời! Bạn thích nghe dòng nhạc nào thế?",
+        "Mình thì thích các bản nhạc không lời nhẹ nhàng để tập trung làm việc."
+      ]
+    },
+    {
+      "patterns": ["thể thao", "bóng đá", "chạy bộ", "tập gym"],
+      "responses": [
+        "Thể thao giúp nâng cao sức khỏe rất tốt. Bạn thường chơi môn thể thao nào?",
+        "Hôm nay bạn đã vận động hay tập thể dục chưa?"
+      ]
+    },
+    {
+      "patterns": ["đọc sách", "sách hay", "giới thiệu sách"],
+      "responses": [
+        "Sách là kho tàng tri thức! Bạn có thích đọc sách phát triển bản thân hay tiểu thuyết?",
+        "Một số cuốn sách hay về lập trình và tư duy rất đáng đọc đấy, bạn muốn mình gợi ý không?"
+      ]
+    },
+    {
+      "patterns": ["buồn", "chán", "mệt mỏi", "áp lực", "stress"],
+      "responses": [
+        "Đừng buồn nhé, mọi chuyện rồi sẽ ổn thôi. Hãy thử nghe một bản nhạc yêu thích hoặc nghỉ ngơi chút nha!",
+        "Cuộc sống đôi khi có những ngày áp lực. Bạn hãy thả lỏng và tự thưởng cho mình một món ngon nhé."
+      ]
+    },
+    {
+      "patterns": ["vui quá", "hạnh phúc", "tuyệt vời", "hứng khởi"],
+      "responses": [
+        "Tuyệt quá! Nghe bạn vui vẻ là mình cũng thấy vui lây rồi.",
+        "Chúc bạn sẽ có một ngày thật trọn vẹn và nhiều năng lượng tích cực nhé!"
+      ]
+    },
+    {
+      "patterns": ["mấy giờ rồi", "giờ", "thời gian"],
+      "responses": [
+        "Bạn có thể nhìn lên góc màn hình thiết bị của mình để xem giờ chính xác nha.",
+        "Thời gian trôi qua nhanh lắm, hãy tranh thủ hoàn thành mục tiêu hôm nay nhé!"
+      ]
+    },
+    {
+      "patterns": ["học tập", "học", "ôn thi", "kiến thức", "môn học"],
+      "responses": [
+        "Học tập là con đường ngắn nhất dẫn đến thành công! Hôm nay bạn dự định học môn gì thế?",
+        "Hãy chia nhỏ thời gian học và nghỉ ngơi hợp lý để đạt hiệu quả cao nhất nhé."
+      ]
+    },
+    {
+      "patterns": ["sức khỏe", "ốm", "mệt", "bệnh", "uống thuốc"],
+      "responses": [
+        "Sức khỏe là vốn quý nhất! Nếu bạn thấy mệt, hãy gác lại công việc và nghỉ ngơi sớm nhé.",
+        "Nhớ uống đủ nước và ăn uống điều độ để giữ gìn sức khỏe nha!"
+      ]
+    },
+    {
+      "patterns": ["thể dục", "tập thể dục", "yoga", "chạy", "gym"],
+      "responses": [
+        "Vận động mỗi ngày giúp cơ thể khỏe mạnh và tinh thần sảng khoái hơn rất nhiều đấy.",
+        "Tuyệt vời! Hãy duy trì thói quen tập luyện đều đặn nhé."
+      ]
+    },
+    {
+      "patterns": ["mấy giờ", "giờ giấc", "thời gian", "hôm nay ngày mấy"],
+      "responses": [
+        "Bạn có thể kiểm tra đồng hồ trên góc màn hình thiết bị để xem thời gian chính xác nhé.",
+        "Thời gian trôi nhanh lắm, hãy tranh thủ hoàn thành các mục tiêu trong ngày nha!"
+      ]
+    },
+    {
+      "patterns": ["công nghệ", "ai", "trí tuệ nhân tạo", "phần mềm"],
+      "responses": [
+        "Công nghệ thay đổi từng ngày, và các hệ thống AI như mình đang ngày càng thông minh hơn để hỗ trợ con người.",
+        "Bạn có hứng thú với lĩnh vực công nghệ thông tin hay lập trình không?"
+      ]
+    },
+    {
+      "patterns": ["mua sắm", "shopping", "mua đồ", "cửa hàng", "giá cả"],
+      "responses": [
+        "Mua sắm là một cách giải tỏa stress rất tốt! Bạn đang muốn tìm mua món đồ gì thế?",
+        "Hãy cân nhắc kỹ ngân sách trước khi chốt đơn nha, hihi!"
+      ]
+    },
+    {
+      "patterns": ["tiền", "ví tiền", "lương", "tài chính", "tiết kiệm"],
+      "responses": [
+        "Tiền là giấy, nhưng không có nó thì... đúng là mệt thật đấy! Hãy quản lý tài chính thật tốt nhé.",
+        "Kế hoạch tài chính vững chắc sẽ mang lại sự an tâm lớn cho tương lai đấy."
+      ]
+    },
+    {
+      "patterns": ["phim", "xem phim", "bộ phim", "rạp chiếu phim", "netflix"],
+      "responses": [
+        "Xem phim là lựa chọn tuyệt vời để thư giãn cuối tuần. Bạn thích xem thể loại phim hành động, kinh dị hay tình cảm?",
+        "Gần đây có nhiều bộ phim hay lắm đấy, bạn đã xem bộ nào mới ra mắt chưa?"
+      ]
+    },
+    {
+      "patterns": ["game", "chơi game", "trò chơi điện tử", "game thủ"],
+      "responses": [
+        "Chơi game giải trí sau giờ làm việc rất tốt, nhưng nhớ đừng thức quá khuya nhé!",
+        "Bạn thích chơi thể loại game hành động, chiến thuật hay giải đố nhẹ nhàng?"
+      ]
+    },
+    {
+      "patterns": ["du lịch", "đi chơi", "phượt", "khám phá", "địa điểm đẹp"],
+      "responses": [
+        "Được xách ba lô lên và đi khám phá thế giới là ước mơ của rất nhiều người! Kỳ nghỉ tới bạn dự định đi đâu chơi chưa?",
+        "Việt Nam có rất nhiều cảnh đẹp và món ăn ngon đang chờ bạn khám phá đấy."
+      ]
+    },
+    {
+      "patterns": ["công việc", "việc làm", "sự nghiệp", "phỏng vấn", "cv"],
+      "responses": [
+        "Công việc là một phần quan trọng của cuộc sống! Chúc bạn luôn tìm thấy niềm vui và sự thăng tiến trong sự nghiệp nhé.",
+        "Bạn đang làm trong lĩnh vực nào thế? Có gặp áp lực gì lớn không?"
+      ]
+    },
+    {
+      "patterns": ["môi trường", "trái đất", "thiên nhiên", "cây xanh", "bảo vệ môi trường"],
+      "responses": [
+        "Bảo vệ môi trường là trách nhiệm chung của tất cả chúng ta! Hãy cùng nhau trồng thêm nhiều cây xanh và hạn chế rác thải nhựa nhé.",
+        "Thiên nhiên xanh sạch sẽ giúp cuộc sống của chúng ta trong lành và khỏe mạnh hơn rất nhiều."
+      ]
+    },
+    {
+      "patterns": ["thú cưng", "chó", "mèo", "pet", "động vật"],
+      "responses": [
+        "Thú cưng đáng yêu lắm phải không? Bạn có đang nuôi chú chó hay chú mèo nào ở nhà không?",
+        "Nhìn mấy bé thú cưng nô đùa là bao nhiêu mệt mỏi tan biến hết luôn!"
+      ]
+    },
+    {
+      "patterns": ["ước mơ", "mục tiêu", "tương lai", "hoài bão"],
+      "responses": [
+        "Có ước mơ và mục tiêu rõ ràng là bước đầu tiên để chạm tới thành công. Cố gắng lên nhé!",
+        "Tương lai thuộc về những ai tin tưởng vào vẻ đẹp của những giấc mơ!"
+      ]
+    },
+    {
+      "patterns": ["tin tức", "sự kiện", "báo chí", "thế giới"],
+      "responses": [
+        "Thế giới luôn chuyển động từng giây với rất nhiều tin tức thú vị. Bạn thường quan tâm đến lĩnh vực gì nhất?",
+        "Việc cập nhật tin tức mỗi ngày giúp chúng ta không bị lỗi nhịp với thời đại đấy."
+      ]
+    }
+  ]
 }
