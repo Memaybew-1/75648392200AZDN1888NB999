@@ -3,186 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Chatbot JSON-driven</title>
+    <title>AI Embedding Chatbot (Cached)</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: #f0f2f5; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-        }
-        .chat-header { 
-            background: #0084ff; 
-            color: white; 
-            padding: 15px; 
-            text-align: center; 
-            font-size: 18px; 
-            font-weight: bold; 
-        }
-        .chat-container { 
-            flex: 1; 
-            padding: 15px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-        }
-        .message { 
-            max-width: 75%; 
-            padding: 10px 15px; 
-            border-radius: 15px; 
-            line-height: 1.4; 
-            word-wrap: break-word; 
-        }
-        .message.user { 
-            background: #0084ff; 
-            color: white; 
-            align-self: flex-end; 
-            border-bottom-right-radius: 3px; 
-        }
-        .message.bot { 
-            background: #e4e6eb; 
-            color: black; 
-            align-self: flex-start; 
-            border-bottom-left-radius: 3px; 
-        }
-        .chat-input-area { 
-            display: flex; 
-            padding: 10px; 
-            background: white; 
-            border-top: 1px solid #ddd; 
-        }
-        .chat-input-area input { 
-            flex: 1; 
-            padding: 10px 15px; 
-            border: 1px solid #ddd; 
-            border-radius: 20px; 
-            outline: none; 
-            font-size: 14px; 
-        }
-        .chat-input-area button { 
-            background: #0084ff; 
-            color: white; 
-            border: none; 
-            padding: 10px 20px; 
-            margin-left: 8px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            font-weight: bold; 
-        }
-        .chat-input-area button:hover { 
-            background: #006edd; 
-        }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .chat-container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .chat-box { height: 350px; border: 1px solid #ddd; border-radius: 6px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #fafafa; display: flex; flex-direction: column; gap: 8px; }
+        .message { padding: 8px 12px; border-radius: 6px; max-width: 80%; word-break: break-word; }
+        .user { background: #0084ff; color: white; align-self: flex-end; }
+        .bot { background: #e4e6eb; color: black; align-self: flex-start; }
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
+        button { padding: 10px 20px; background: #0084ff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        button:hover { background: #006edc; }
+        .status { font-size: 12px; color: #666; margin-bottom: 8px; font-style: italic; }
     </style>
 </head>
 <body>
 
-    <div class="chat-header">SimpleBot Assistant</div>
-    
-    <div class="chat-container" id="chatContainer">
-        <div class="message bot">Xin chào! Đang tải dữ liệu từ data.json...</div>
+<div class="chat-container">
+    <h3>AI Local Embedding Chatbot</h3>
+    <div class="status" id="statusText">Đang khởi tạo hệ thống...</div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Nhập tin nhắn..." disabled onkeypress="handleKeyPress(event)">
+        <button id="sendBtn" onclick="sendMessage()" disabled>Gửi</button>
     </div>
+</div>
 
-    <div class="chat-input-area">
-        <input type="text" id="userInput" placeholder="Nhập tin nhắn của bạn..." autocomplete="off">
-        <button id="sendBtn">Gửi</button>
-    </div>
+<script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0';
 
-    <script>
-        let chatbotData = null;
-        const chatContainer = document.getElementById('chatContainer');
-        const userInput = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
+    let embedder = null;
+    let embeddedKnowledge = [];
 
-        // Hàm tải file data.json bất đồng bộ
-        async function loadChatbotData() {
-            try {
-                const response = await fetch('data.json');
-                if (!response.ok) throw new Error('Không thể tải file data.json');
-                chatbotData = await response.json();
+    async function initAI() {
+        try {
+            // 1. Luôn tải mô hình AI trước (trên trình duyệt, mô hình đã được cache tự động bởi thư viện)
+            document.getElementById("statusText").innerText = "Đang tải mô hình AI...";
+            embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+
+            // 2. Đọc file data.json
+            let response = await fetch('data.json');
+            if (!response.ok) throw new Error("Không thể đọc file data.json");
+            let jsonData = await response.json();
+            let knowledgeBase = jsonData.responses;
+
+            // 3. Kiểm tra xem bộ nhớ trình duyệt đã lưu vector của danh sách này chưa
+            let cacheKey = "embedded_knowledge_v1_" + knowledgeBase.length;
+            let cachedData = localStorage.getItem(cacheKey);
+
+            if (cachedData) {
+                // Nếu có rồi, lấy ra dùng luôn trong 0.1 giây, KHÔNG CẦN LOOP VECTOR HÓA NỮA!
+                document.getElementById("statusText").innerText = "Đang tải dữ liệu từ bộ nhớ đệm...";
+                embeddedKnowledge = JSON.parse(cachedData);
+            } else {
+                // Nếu chưa có (hoặc file data.json vừa được thêm bớt câu), mới tiến hành chạy vòng lặp vector hóa
+                document.getElementById("statusText").innerText = "Đang xử lý vector hóa dữ liệu lần đầu (" + knowledgeBase.length + " câu)...";
                 
-                chatContainer.innerHTML = '<div class="message bot">Xin chào! Tôi đã sẵn sàng trò chuyện cùng bạn.</div>';
-            } catch (error) {
-                console.warn('Lỗi CORS hoặc không tìm thấy file, chuyển sang dùng dữ liệu dự phòng:', error);
-                
-                chatbotData = {
-                    "intents": [
-                        {
-                            "patterns": ["chào", "hi", "hello"],
-                            "responses": [
-                                "Chào bạn! (Chế độ dự phòng do chưa chạy qua Local Server).",
-                                "Hãy chạy qua Local Server để nạp file data.json đầy đủ nhé!"
-                            ]
-                        }
-                    ]
-                };
-                
-                chatContainer.innerHTML = '<div class="message bot">⚠️ Đang chạy ở chế độ dự phòng. Hãy dùng Local Server để load data.json chuẩn xác!</div>';
+                for (let text of knowledgeBase) {
+                    let output = await embedder(text, { pooling: 'mean', normalize: true });
+                    embeddedKnowledge.push({
+                        text: text,
+                        vector: Array.from(output.data)
+                    });
+                }
+
+                // Lưu kết quả vào LocalStorage để các lần sau bật lên là ăn ngay
+                localStorage.setItem(cacheKey, JSON.stringify(embeddedKnowledge));
             }
+
+            document.getElementById("statusText").innerText = "AI đã sẵn sàng trò chuyện!";
+            document.getElementById("userInput").disabled = false;
+            document.getElementById("sendBtn").disabled = false;
+            appendMessage("Bot: Chào bạn, hệ thống đã sẵn sàng!", "bot");
+
+        } catch (error) {
+            document.getElementById("statusText").innerText = "Lỗi: " + error.message;
+            console.error(error);
+        }
+    }
+
+    initAI();
+
+    function cosineSimilarity(vecA, vecB) {
+        let dotProduct = 0;
+        let normA = 0;
+        let normB = 0;
+        for (let i = 0; i < vecA.length; i++) {
+            dotProduct += vecA[i] * vecB[i];
+            normA += vecA[i] * vecA[i];
+            normB += vecB[i] * vecB[i];
+        }
+        if (normA === 0 || normB === 0) return 0.0;
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    window.sendMessage = async function() {
+        let input = document.getElementById("userInput");
+        let text = input.value.trim();
+        if (!text || !embedder) return;
+
+        appendMessage("Bạn: " + text, "user");
+        input.value = "";
+
+        let userOutput = await embedder(text, { pooling: 'mean', normalize: true });
+        let userVector = Array.from(userOutput.data);
+
+        let scoredList = [];
+        for (let item of embeddedKnowledge) {
+            let score = cosineSimilarity(userVector, item.vector);
+            scoredList.push({ text: item.text, score: score });
         }
 
-        loadChatbotData();
+        scoredList.sort((a, b) => b.score - a.score);
 
-        function appendMessage(sender, text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', sender);
-            messageDiv.textContent = text;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
+        let topMatches = scoredList.slice(0, 3);
 
-        function handleUserMessage() {
-            const text = userInput.value.trim();
-            if (!text) return;
-
-            appendMessage('user', text);
-            userInput.value = '';
-
+        if (topMatches.length === 0 || topMatches[0].score < 0.2) {
             setTimeout(() => {
-                const botReply = findBotResponse(text);
-                appendMessage('bot', botReply);
-            }, 300);
+                appendMessage("Bot: Tôi chưa hiểu rõ ý bạn lắm.", "bot");
+            }, 200);
+            return;
         }
 
-        function findBotResponse(input) {
-            if (!chatbotData || !chatbotData.intents) return "Hệ thống đang khởi tạo dữ liệu, vui lòng đợi giây lát...";
+        let randomIndex = Math.floor(Math.random() * topMatches.length);
+        let selected = topMatches[randomIndex];
 
-            const lowerInput = input.toLowerCase();
-            
-            // 1. Kiểm tra khớp các patterns trong intents
-            for (let item of chatbotData.intents) {
-                for (let pattern of item.patterns) {
-                    if (lowerInput.includes(pattern.toLowerCase())) {
-                        const responses = item.responses;
-                        return responses[Math.floor(Math.random() * responses.length)];
-                    }
-                }
-            }
+        setTimeout(() => {
+            appendMessage("Bot: " + selected.text + ` (Độ chính xác: ${(selected.score * 100).toFixed(1)}%)`, "bot");
+        }, 200);
+    }
 
-            // 2. Không khớp key nào -> Gom toàn bộ các giá trị responses từ mọi intent trong file
-            let allResponses = [];
-            for (let item of chatbotData.intents) {
-                if (item.responses && Array.isArray(item.responses)) {
-                    allResponses = allResponses.concat(item.responses);
-                }
-            }
+    window.handleKeyPress = function(e) {
+        if (e.key === "Enter") window.sendMessage();
+    }
 
-            if (allResponses.length === 0) {
-                return "Xin lỗi, tôi chưa hiểu ý bạn.";
-            }
+    function appendMessage(text, sender) {
+        let chatBox = document.getElementById("chatBox");
+        let div = document.createElement("div");
+        div.className = "message " + sender;
+        div.innerText = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
 
-            // Random ngẫu nhiên 1 value bất kỳ trong toàn bộ kho responses
-            return allResponses[Math.floor(Math.random() * allResponses.length)];
-        }
-
-        sendBtn.addEventListener('click', handleUserMessage);
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleUserMessage();
-            }
-        });
-    </script>
 </body>
 </html>
