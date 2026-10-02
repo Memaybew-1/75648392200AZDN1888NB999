@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Local Chatbot (Embedding + Markov)</title>
+    <title>AI Local Chatbot - Modular</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
         .chat-container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -11,10 +11,13 @@
         .message { padding: 8px 12px; border-radius: 6px; max-width: 80%; word-break: break-word; }
         .user { background: #0084ff; color: white; align-self: flex-end; }
         .bot { background: #e4e6eb; color: black; align-self: flex-start; }
+        .typing { font-style: italic; color: #666; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
         .input-area { display: flex; gap: 10px; }
         input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
         button { padding: 10px 20px; background: #0084ff; color: white; border: none; border-radius: 6px; cursor: pointer; }
         button:hover { background: #006edc; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .status { font-size: 12px; color: #666; margin-bottom: 8px; font-style: italic; }
     </style>
 </head>
@@ -32,49 +35,14 @@
 
 <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0';
+    import { loadChatHistory, saveMessageRecord, updateRecentQueries, getRecentQueries } from './ui.js';
+    import { cosineSimilarity, extractPivotWords, generatePivotMarkovResponse } from './ai.js';
 
     let embedder = null;
     let embeddedKnowledge = [];
+    const chatBox = document.getElementById("chatBox");
 
-    // --- 1. THUẬT TOÁN MARKOV CHAIN (XÀO NẤU CÂU MỚI) ---
-    function generateMarkovResponse(corpusSentences) {
-        let markovMap = {};
-        
-        corpusSentences.forEach(sentence => {
-            let words = sentence.split(" ");
-            for (let i = 0; i < words.length - 1; i++) {
-                let currentWord = words[i];
-                let nextWord = words[i + 1];
-                if (!markovMap[currentWord]) {
-                    markovMap[currentWord] = [];
-                }
-                markovMap[currentWord].push(nextWord);
-            }
-        });
-
-        let keys = Object.keys(markovMap);
-        if (keys.length === 0) return null;
-
-        let currentWord = keys[Math.floor(Math.random() * keys.length)];
-        let result = [currentWord];
-        let maxLength = 15;
-
-        for (let i = 0; i < maxLength; i++) {
-            let nextOptions = markovMap[currentWord];
-            if (!nextOptions || nextOptions.length === 0) break;
-            let nextWord = nextOptions[Math.floor(Math.random() * nextOptions.length)];
-            result.push(nextWord);
-            currentWord = nextWord;
-            
-            if (nextWord.includes(".") || nextWord.includes("!") || nextWord.includes("?")) break;
-        }
-
-        let generatedText = result.join(" ");
-        return generatedText.charAt(0).toUpperCase() + generatedText.slice(1);
-    }
-
-    // --- 2. KHỞI TẠO AI VÀ LƯU CACHE (LOCALSTORAGE) ---
-    async function initAI() {
+    async function initSystem() {
         try {
             document.getElementById("statusText").innerText = "Đang tải mô hình AI...";
             embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
@@ -88,99 +56,90 @@
             let cachedData = localStorage.getItem(cacheKey);
 
             if (cachedData) {
-                document.getElementById("statusText").innerText = "Đang tải dữ liệu từ bộ nhớ đệm...";
+                document.getElementById("statusText").innerText = "Đang nạp cache từ bộ nhớ...";
                 embeddedKnowledge = JSON.parse(cachedData);
             } else {
-                document.getElementById("statusText").innerText = "Đang vector hóa dữ liệu (" + knowledgeBase.length + " câu)...";
-                
+                document.getElementById("statusText").innerText = "Đang vector hóa (" + knowledgeBase.length + " câu)...";
                 for (let text of knowledgeBase) {
                     let output = await embedder(text, { pooling: 'mean', normalize: true });
-                    embeddedKnowledge.push({
-                        text: text,
-                        vector: Array.from(output.data)
-                    });
+                    embeddedKnowledge.push({ text: text, vector: Array.from(output.data) });
                 }
                 localStorage.setItem(cacheKey, JSON.stringify(embeddedKnowledge));
             }
 
-            document.getElementById("statusText").innerText = "AI đã sẵn sàng!";
+            document.getElementById("statusText").innerText = "AI sẵn sàng!";
             document.getElementById("userInput").disabled = false;
             document.getElementById("sendBtn").disabled = false;
-            appendMessage("Bot: Chào bạn, hệ thống đã sẵn sàng!", "bot");
+
+            // Load lại lịch sử chat cũ lên giao diện
+            loadChatHistory(chatBox);
+            if (chatBox.children.length === 0) {
+                saveMessageRecord(chatBox, "Bot: Chào bạn, tôi đã sẵn sàng!", "bot");
+            }
 
         } catch (error) {
             document.getElementById("statusText").innerText = "Lỗi: " + error.message;
-            console.error(error);
         }
     }
 
-    initAI();
+    initSystem();
 
-    function cosineSimilarity(vecA, vecB) {
-        let dotProduct = 0, normA = 0, normB = 0;
-        for (let i = 0; i < vecA.length; i++) {
-            dotProduct += vecA[i] * vecB[i];
-            normA += vecA[i] * vecA[i];
-            normB += vecB[i] * vecB[i];
-        }
-        if (normA === 0 || normB === 0) return 0.0;
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-    }
-
-    // --- 3. XỬ LÝ GỬI TIN NHẮN & KẾT HỢP DỰ ĐOÁN ---
     window.sendMessage = async function() {
         let input = document.getElementById("userInput");
-        let text = input.value.trim();
-        if (!text || !embedder) return;
+        let sendBtn = document.getElementById("sendBtn");
+        let userText = input.value.trim();
+        if (!userText || !embedder) return;
 
-        appendMessage("Bạn: " + text, "user");
+        saveMessageRecord(chatBox, "Bạn: " + userText, "user");
         input.value = "";
+        input.disabled = true;
+        sendBtn.disabled = true;
 
-        let userOutput = await embedder(text, { pooling: 'mean', normalize: true });
+        let typingDiv = saveMessageRecord(chatBox, "Bot: Đang suy nghĩ...", "bot typing");
+
+        let userOutput = await embedder(userText, { pooling: 'mean', normalize: true });
         let userVector = Array.from(userOutput.data);
 
-        let scoredList = [];
-        for (let item of embeddedKnowledge) {
-            let score = cosineSimilarity(userVector, item.vector);
-            scoredList.push({ text: item.text, score: score });
+        let scoredList = embeddedKnowledge.map(item => ({
+            text: item.text,
+            score: cosineSimilarity(userVector, item.vector)
+        })).sort((a, b) => b.score - a.score);
+
+        let finalReply = "Tôi chưa hiểu ý bạn lắm.";
+
+        // Lọc Top 15 và bốc ngẫu nhiên 5 câu theo đúng thỏa thuận
+        let candidates = scoredList.filter(item => item.score >= 0.2).slice(0, 15);
+
+        if (candidates.length > 0) {
+            let shuffled = [...candidates].sort(() => 0.5 - Math.random());
+            let topMatches = shuffled.slice(0, 5);
+
+            // Cập nhật và lấy tối đa 5 câu input gần nhất làm ngữ cảnh phụ Markov
+            let recentList = updateRecentQueries(userText);
+            let combinedText = recentList.join(" ") + " " + userText;
+            let pivotWords = extractPivotWords(combinedText);
+            
+            let corpus = topMatches.map(item => item.text);
+            let markovReply = generatePivotMarkovResponse(corpus, pivotWords);
+            
+            finalReply = markovReply || scoredList[0].text;
+        } else {
+            updateRecentQueries(userText);
         }
 
-        scoredList.sort((a, b) => b.score - a.score);
-
-        // Lấy Top 5 câu liên quan nhất
-        let topMatches = scoredList.slice(0, 5);
-
-        if (topMatches.length === 0 || topMatches[0].score < 0.2) {
-            setTimeout(() => {
-                appendMessage("Bot: Tôi chưa hiểu rõ ý bạn lắm.", "bot");
-            }, 200);
-            return;
-        }
-
-        // Tạo nguồn dữ liệu từ Top 5 câu liên quan để Markov xào nấu
-        let corpus = topMatches.map(item => item.text);
-        let markovReply = generateMarkovResponse(corpus);
-
-        // Nếu Markov tạo ra câu hợp lệ thì dùng, không thì lấy câu có điểm cao nhất
-        let finalReply = (markovReply && markovReply.length > 3) ? markovReply : topMatches[0].text;
+        let randomDelay = Math.floor(Math.random() * 1000) + 1500;
 
         setTimeout(() => {
-            appendMessage("Bot: " + finalReply, "bot");
-        }, 200);
+            chatBox.removeChild(typingDiv); // Xóa dòng "Đang suy nghĩ..." tạm thời
+            saveMessageRecord(chatBox, "Bot: " + finalReply, "bot");
+
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
+        }, randomDelay);
     }
 
-    window.handleKeyPress = function(e) {
-        if (e.key === "Enter") window.sendMessage();
-    }
-
-    function appendMessage(text, sender) {
-        let chatBox = document.getElementById("chatBox");
-        let div = document.createElement("div");
-        div.className = "message " + sender;
-        div.innerText = text;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
+    window.handleKeyPress = (e) => { if (e.key === "Enter") window.sendMessage(); };
 </script>
 
 </body>
