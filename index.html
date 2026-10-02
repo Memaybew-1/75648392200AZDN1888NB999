@@ -52,19 +52,14 @@
             let jsonData = await response.json();
             let knowledgeBase = jsonData.responses;
 
-            let cacheKey = "embedded_knowledge_v4_" + knowledgeBase.length;
-            let cachedData = localStorage.getItem(cacheKey);
+            document.getElementById("statusText").innerText = "Đang vector hóa tri thức (" + knowledgeBase.length + " câu)...";
+            
+            // Xóa sạch cache cũ gây tràn bộ nhớ nếu có
+            localStorage.clear();
 
-            if (cachedData) {
-                document.getElementById("statusText").innerText = "Đang nạp cache từ bộ nhớ...";
-                embeddedKnowledge = JSON.parse(cachedData);
-            } else {
-                document.getElementById("statusText").innerText = "Đang vector hóa (" + knowledgeBase.length + " câu)...";
-                for (let text of knowledgeBase) {
-                    let output = await embedder(text, { pooling: 'mean', normalize: true });
-                    embeddedKnowledge.push({ text: text, vector: Array.from(output.data) });
-                }
-                localStorage.setItem(cacheKey, JSON.stringify(embeddedKnowledge));
+            for (let text of knowledgeBase) {
+                let output = await embedder(text, { pooling: 'mean', normalize: true });
+                embeddedKnowledge.push({ text: text, vector: Array.from(output.data) });
             }
 
             document.getElementById("statusText").innerText = "AI sẵn sàng!";
@@ -81,6 +76,7 @@
             console.error(error);
         }
     }
+    
 
     initSystem();
 
