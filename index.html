@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Embedding Chatbot (Cached)</title>
+    <title>AI Local Chatbot (Embedding + Markov)</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
         .chat-container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -21,7 +21,7 @@
 <body>
 
 <div class="chat-container">
-    <h3>AI Local Embedding Chatbot</h3>
+    <h3>AI Local Chatbot</h3>
     <div class="status" id="statusText">Đang khởi tạo hệ thống...</div>
     <div class="chat-box" id="chatBox"></div>
     <div class="input-area">
@@ -36,29 +36,62 @@
     let embedder = null;
     let embeddedKnowledge = [];
 
+    // --- 1. THUẬT TOÁN MARKOV CHAIN (XÀO NẤU CÂU MỚI) ---
+    function generateMarkovResponse(corpusSentences) {
+        let markovMap = {};
+        
+        corpusSentences.forEach(sentence => {
+            let words = sentence.split(" ");
+            for (let i = 0; i < words.length - 1; i++) {
+                let currentWord = words[i];
+                let nextWord = words[i + 1];
+                if (!markovMap[currentWord]) {
+                    markovMap[currentWord] = [];
+                }
+                markovMap[currentWord].push(nextWord);
+            }
+        });
+
+        let keys = Object.keys(markovMap);
+        if (keys.length === 0) return null;
+
+        let currentWord = keys[Math.floor(Math.random() * keys.length)];
+        let result = [currentWord];
+        let maxLength = 15;
+
+        for (let i = 0; i < maxLength; i++) {
+            let nextOptions = markovMap[currentWord];
+            if (!nextOptions || nextOptions.length === 0) break;
+            let nextWord = nextOptions[Math.floor(Math.random() * nextOptions.length)];
+            result.push(nextWord);
+            currentWord = nextWord;
+            
+            if (nextWord.includes(".") || nextWord.includes("!") || nextWord.includes("?")) break;
+        }
+
+        let generatedText = result.join(" ");
+        return generatedText.charAt(0).toUpperCase() + generatedText.slice(1);
+    }
+
+    // --- 2. KHỞI TẠO AI VÀ LƯU CACHE (LOCALSTORAGE) ---
     async function initAI() {
         try {
-            // 1. Luôn tải mô hình AI trước (trên trình duyệt, mô hình đã được cache tự động bởi thư viện)
             document.getElementById("statusText").innerText = "Đang tải mô hình AI...";
             embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
 
-            // 2. Đọc file data.json
             let response = await fetch('data.json');
             if (!response.ok) throw new Error("Không thể đọc file data.json");
             let jsonData = await response.json();
             let knowledgeBase = jsonData.responses;
 
-            // 3. Kiểm tra xem bộ nhớ trình duyệt đã lưu vector của danh sách này chưa
             let cacheKey = "embedded_knowledge_v1_" + knowledgeBase.length;
             let cachedData = localStorage.getItem(cacheKey);
 
             if (cachedData) {
-                // Nếu có rồi, lấy ra dùng luôn trong 0.1 giây, KHÔNG CẦN LOOP VECTOR HÓA NỮA!
                 document.getElementById("statusText").innerText = "Đang tải dữ liệu từ bộ nhớ đệm...";
                 embeddedKnowledge = JSON.parse(cachedData);
             } else {
-                // Nếu chưa có (hoặc file data.json vừa được thêm bớt câu), mới tiến hành chạy vòng lặp vector hóa
-                document.getElementById("statusText").innerText = "Đang xử lý vector hóa dữ liệu lần đầu (" + knowledgeBase.length + " câu)...";
+                document.getElementById("statusText").innerText = "Đang vector hóa dữ liệu (" + knowledgeBase.length + " câu)...";
                 
                 for (let text of knowledgeBase) {
                     let output = await embedder(text, { pooling: 'mean', normalize: true });
@@ -67,12 +100,10 @@
                         vector: Array.from(output.data)
                     });
                 }
-
-                // Lưu kết quả vào LocalStorage để các lần sau bật lên là ăn ngay
                 localStorage.setItem(cacheKey, JSON.stringify(embeddedKnowledge));
             }
 
-            document.getElementById("statusText").innerText = "AI đã sẵn sàng trò chuyện!";
+            document.getElementById("statusText").innerText = "AI đã sẵn sàng!";
             document.getElementById("userInput").disabled = false;
             document.getElementById("sendBtn").disabled = false;
             appendMessage("Bot: Chào bạn, hệ thống đã sẵn sàng!", "bot");
@@ -86,9 +117,7 @@
     initAI();
 
     function cosineSimilarity(vecA, vecB) {
-        let dotProduct = 0;
-        let normA = 0;
-        let normB = 0;
+        let dotProduct = 0, normA = 0, normB = 0;
         for (let i = 0; i < vecA.length; i++) {
             dotProduct += vecA[i] * vecB[i];
             normA += vecA[i] * vecA[i];
@@ -98,6 +127,7 @@
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
+    // --- 3. XỬ LÝ GỬI TIN NHẮN & KẾT HỢP DỰ ĐOÁN ---
     window.sendMessage = async function() {
         let input = document.getElementById("userInput");
         let text = input.value.trim();
@@ -117,7 +147,8 @@
 
         scoredList.sort((a, b) => b.score - a.score);
 
-        let topMatches = scoredList.slice(0, 3);
+        // Lấy Top 5 câu liên quan nhất
+        let topMatches = scoredList.slice(0, 5);
 
         if (topMatches.length === 0 || topMatches[0].score < 0.2) {
             setTimeout(() => {
@@ -126,11 +157,15 @@
             return;
         }
 
-        let randomIndex = Math.floor(Math.random() * topMatches.length);
-        let selected = topMatches[randomIndex];
+        // Tạo nguồn dữ liệu từ Top 5 câu liên quan để Markov xào nấu
+        let corpus = topMatches.map(item => item.text);
+        let markovReply = generateMarkovResponse(corpus);
+
+        // Nếu Markov tạo ra câu hợp lệ thì dùng, không thì lấy câu có điểm cao nhất
+        let finalReply = (markovReply && markovReply.length > 3) ? markovReply : topMatches[0].text;
 
         setTimeout(() => {
-            appendMessage("Bot: " + selected.text + ` (Độ chính xác: ${(selected.score * 100).toFixed(1)}%)`, "bot");
+            appendMessage("Bot: " + finalReply, "bot");
         }, 200);
     }
 
