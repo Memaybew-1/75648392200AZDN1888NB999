@@ -1,60 +1,58 @@
-// ui.js - Quản lý giao diện và LocalStorage lịch sử chat
+const HISTORY_KEY = "chat_history_v2";
+const RECENT_QUERIES_KEY = "recent_queries_v2";
 
-export const MAX_RECENT_QUERIES = 5;
-let recentUserQueries = [];
+export function loadChatHistory(chatBox) {
+    try {
+        let data = localStorage.getItem(HISTORY_KEY);
+        if (!data) return;
+        let history = JSON.parse(data);
+        if (!Array.isArray(history)) return;
 
-// Khởi tạo lịch sử chat từ LocalStorage khi load trang
-export function loadChatHistory(chatBoxEl) {
-    let savedHistory = localStorage.getItem("chat_history_v1");
-    if (savedHistory) {
-        try {
-            let history = JSON.parse(savedHistory);
-            history.forEach(msg => {
-                appendMessageToBox(chatBoxEl, msg.text, msg.sender);
-                // Khôi phục lại các câu input của user vào mảng nhớ ngắn hạn
-                if (msg.sender === "user" && recentUserQueries.length < MAX_RECENT_QUERIES) {
-                    recentUserQueries.push(msg.text.replace("Bạn: ", ""));
-                }
-            });
-        } catch (e) {
-            console.error("Lỗi đọc lịch sử chat:", e);
-        }
+        chatBox.innerHTML = "";
+        history.forEach(item => {
+            let div = document.createElement("div");
+            div.className = "message " + (item.sender.includes("user") ? "user" : "bot");
+            div.innerText = item.text;
+            chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+    } catch (e) {
+        console.error("Lỗi tải lịch sử chat:", e);
     }
 }
 
-// Lưu tin nhắn vào LocalStorage
-function saveToLocalStorage(sender, text) {
-    let history = JSON.parse(localStorage.getItem("chat_history_v1") || "[]");
-    history.push({ sender, text, time: Date.now() });
-    // Giữ tối đa 50 tin nhắn gần nhất trong bộ nhớ trình duyệt để không bị đầy
-    if (history.length > 50) history.shift();
-    localStorage.setItem("chat_history_v1", JSON.stringify(history));
-}
-
-// Hiển thị tin nhắn lên khung chat
-export function appendMessageToBox(chatBoxEl, text, senderClass) {
+export function saveMessageRecord(chatBox, text, senderClass) {
     let div = document.createElement("div");
     div.className = "message " + senderClass;
     div.innerText = text;
-    chatBoxEl.appendChild(div);
-    chatBoxEl.scrollTop = chatBoxEl.scrollHeight;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    if (!senderClass.includes("typing")) {
+        try {
+            let data = localStorage.getItem(HISTORY_KEY);
+            let history = data ? JSON.parse(data) : [];
+            history.push({ text: text, sender: senderClass, time: Date.now() });
+            if (history.length > 50) history = history.slice(-50);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        } catch (e) {
+            console.error("Lỗi lưu tin nhắn:", e);
+        }
+    }
+
     return div;
 }
 
-// Quản lý mảng nhớ ngắn hạn 5 input gần nhất của user
 export function updateRecentQueries(userText) {
-    recentUserQueries.push(userText);
-    if (recentUserQueries.length > MAX_RECENT_QUERIES) {
-        recentUserQueries.shift();
+    try {
+        let data = localStorage.getItem(RECENT_QUERIES_KEY);
+        let list = data ? JSON.parse(data) : [];
+        list.push(userText);
+        if (list.length > 5) list.shift();
+        localStorage.setItem(RECENT_QUERIES_KEY, JSON.stringify(list));
+        return list;
+    } catch (e) {
+        console.error("Lỗi cập nhật truy vấn gần đây:", e);
+        return [userText];
     }
-    return recentUserQueries;
-}
-
-export function getRecentQueries() {
-    return recentUserQueries;
-}
-
-export function saveMessageRecord(chatBoxEl, text, senderClass) {
-    appendMessageToBox(chatBoxEl, text, senderClass);
-    saveToLocalStorage(senderClass, text);
 }

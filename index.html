@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Local Chatbot - Modular</title>
+    <title>AI Local Chatbot - Final Fix</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
         .chat-container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -35,7 +35,7 @@
 
 <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0';
-    import { loadChatHistory, saveMessageRecord, updateRecentQueries, getRecentQueries } from './ui.js';
+    import { loadChatHistory, saveMessageRecord, updateRecentQueries } from './ui.js';
     import { cosineSimilarity, extractPivotWords, generatePivotMarkovResponse } from './ai.js';
 
     let embedder = null;
@@ -52,7 +52,7 @@
             let jsonData = await response.json();
             let knowledgeBase = jsonData.responses;
 
-            let cacheKey = "embedded_knowledge_v1_" + knowledgeBase.length;
+            let cacheKey = "embedded_knowledge_v4_" + knowledgeBase.length;
             let cachedData = localStorage.getItem(cacheKey);
 
             if (cachedData) {
@@ -71,14 +71,14 @@
             document.getElementById("userInput").disabled = false;
             document.getElementById("sendBtn").disabled = false;
 
-            // Load lại lịch sử chat cũ lên giao diện
             loadChatHistory(chatBox);
             if (chatBox.children.length === 0) {
                 saveMessageRecord(chatBox, "Bot: Chào bạn, tôi đã sẵn sàng!", "bot");
             }
 
         } catch (error) {
-            document.getElementById("statusText").innerText = "Lỗi: " + error.message;
+            document.getElementById("statusText").innerText = "Lỗi khởi tạo: " + error.message;
+            console.error(error);
         }
     }
 
@@ -97,46 +97,48 @@
 
         let typingDiv = saveMessageRecord(chatBox, "Bot: Đang suy nghĩ...", "bot typing");
 
-        let userOutput = await embedder(userText, { pooling: 'mean', normalize: true });
-        let userVector = Array.from(userOutput.data);
+        try {
+            let userOutput = await embedder(userText, { pooling: 'mean', normalize: true });
+            let userVector = Array.from(userOutput.data);
 
-        let scoredList = embeddedKnowledge.map(item => ({
-            text: item.text,
-            score: cosineSimilarity(userVector, item.vector)
-        })).sort((a, b) => b.score - a.score);
+            let scoredList = embeddedKnowledge.map(item => ({
+                text: item.text,
+                score: cosineSimilarity(userVector, item.vector)
+            })).sort((a, b) => b.score - a.score);
 
-        let finalReply = "Tôi chưa hiểu ý bạn lắm.";
+            let finalReply = "Tôi chưa hiểu ý bạn lắm.";
+            let candidates = scoredList.slice(0, 15);
 
-        // Lọc Top 15 và bốc ngẫu nhiên 5 câu theo đúng thỏa thuận
-        let candidates = scoredList.filter(item => item.score >= 0.2).slice(0, 15);
+            if (candidates.length > 0) {
+                let shuffled = [...candidates].sort(() => 0.5 - Math.random());
+                let topMatches = shuffled.slice(0, 5);
 
-        if (candidates.length > 0) {
-            let shuffled = [...candidates].sort(() => 0.5 - Math.random());
-            let topMatches = shuffled.slice(0, 5);
+                let recentList = updateRecentQueries(userText);
+                let combinedText = recentList.join(" ") + " " + userText;
+                let pivotWords = extractPivotWords(combinedText);
+                
+                let corpus = topMatches.map(item => item.text);
+                let markovReply = generatePivotMarkovResponse(corpus, pivotWords);
+                
+                finalReply = markovReply || scoredList[0].text;
+            } else {
+                updateRecentQueries(userText);
+            }
 
-            // Cập nhật và lấy tối đa 5 câu input gần nhất làm ngữ cảnh phụ Markov
-            let recentList = updateRecentQueries(userText);
-            let combinedText = recentList.join(" ") + " " + userText;
-            let pivotWords = extractPivotWords(combinedText);
-            
-            let corpus = topMatches.map(item => item.text);
-            let markovReply = generatePivotMarkovResponse(corpus, pivotWords);
-            
-            finalReply = markovReply || scoredList[0].text;
-        } else {
-            updateRecentQueries(userText);
-        }
-
-        let randomDelay = Math.floor(Math.random() * 1000) + 1500;
-
-        setTimeout(() => {
-            chatBox.removeChild(typingDiv); // Xóa dòng "Đang suy nghĩ..." tạm thời
+            chatBox.removeChild(typingDiv);
             saveMessageRecord(chatBox, "Bot: " + finalReply, "bot");
 
+        } catch (err) {
+            console.error("Lỗi khi xử lý tin nhắn:", err);
+            if (typingDiv && typingDiv.parentNode) {
+                chatBox.removeChild(typingDiv);
+            }
+            saveMessageRecord(chatBox, "Bot: Đã xảy ra lỗi nhỏ, bạn thử lại nhé!", "bot");
+        } finally {
             input.disabled = false;
             sendBtn.disabled = false;
             input.focus();
-        }, randomDelay);
+        }
     }
 
     window.handleKeyPress = (e) => { if (e.key === "Enter") window.sendMessage(); };
