@@ -4,72 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Claude Mobile Assistant</title>
-    <!-- Tailwind CSS cho bố cục nhanh -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font chữ Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Liên kết file CSS riêng -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
+<body class="flex flex-col h-[100dvh] overflow-hidden">
 
-    <!-- Header chuẩn Claude -->
-    <header class="flex items-center justify-between px-4 py-3 border-b border-[#e5e0d8] bg-[#fdfbf7] shrink-0">
+    <!-- Header -->
+    <header class="flex items-center justify-between px-4 py-2 border-b border-[#e5e0d8] bg-[#fdfbf7] shrink-0">
         <div class="flex items-center space-x-2">
-            <span class="text-xl font-bold tracking-tight text-[#2d2a26]">Claude</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-[#f0ede6] text-[#6b655d] font-medium">Mini 16D</span>
+            <span class="text-lg font-bold tracking-tight text-[#2d2a26]">Claude</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#f0ede6] text-[#6b655d] font-medium">16D + Markov 3</span>
         </div>
-        <button id="new-chat-btn" class="p-2 text-[#6b655d] hover:text-[#2d2a26] rounded-lg">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        </button>
+        
+        <div class="flex items-center space-x-1">
+            <button id="download-json-btn" title="Tải data.json" class="p-1.5 text-[#6b655d] hover:text-[#2d2a26] rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </button>
+            <button id="new-chat-btn" class="p-1.5 text-[#6b655d] hover:text-[#2d2a26] rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            </button>
+        </div>
     </header>
 
-    <!-- Khu vực khung chat cuộn -->
-    <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-        <!-- Tin nhắn chào mừng ban đầu -->
+    <!-- Khung chat -->
+    <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         <div class="flex items-start space-x-3">
-            <div class="w-8 h-8 rounded-full bg-[#cc785c] flex items-center justify-center text-white shrink-0 font-bold text-sm">C</div>
+            <div class="w-7 h-7 rounded-full bg-[#cc785c] flex items-center justify-center text-white shrink-0 font-bold text-xs">C</div>
             <div class="flex-1 space-y-1">
-                <div class="font-semibold text-sm text-[#2d2a26]">Claude</div>
-                <div class="text-sm text-[#3d3935] leading-relaxed bg-[#f4f0ea] p-3 rounded-2xl rounded-tl-sm inline-block">
-                    Xin chào! Tôi là trợ lý ảo chạy bằng vector 16 chiều và chuỗi Markov bậc 3 trên trình duyệt di động của bạn. Tôi đã sẵn sàng, hãy nhắn gì đó nhé!
+                <div class="font-semibold text-xs text-[#2d2a26]">Claude</div>
+                <div class="text-sm text-[#3d3935] leading-relaxed bg-[#f4f0ea] p-2.5 rounded-2xl rounded-tl-sm inline-block">
+                    Xin chào! Hệ thống Vector 16D, tách từ và Markov bậc 3 đã sẵn sàng trên điện thoại của bạn.
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Thanh nhập liệu cố định ở đáy -->
-    <footer class="p-3 bg-[#fdfbf7] border-t border-[#e5e0d8] shrink-0">
-        <div class="flex items-end bg-white border border-[#d3cdc4] rounded-2xl px-3 py-2 shadow-sm focus-within:border-[#cc785c] transition-colors">
-            <textarea id="user-input" rows="1" placeholder="Nhắn cho Claude..." class="flex-1 resize-none bg-transparent outline-none text-sm text-[#2d2a26] placeholder-[#8c857b] max-h-32 py-1"></textarea>
-            <button id="send-btn" class="ml-2 mb-0.5 p-2 rounded-xl bg-[#cc785c] text-white hover:bg-[#b5674c] transition-colors shrink-0">
+    <!-- Thanh nhập liệu được tinh chỉnh chiều cao sát đáy -->
+    <footer class="p-2 bg-[#fdfbf7] border-t border-[#e5e0d8] shrink-0">
+        <div class="flex items-end bg-white border border-[#d3cdc4] rounded-xl px-3 py-1.5 shadow-sm focus-within:border-[#cc785c]">
+            <textarea id="user-input" rows="1" placeholder="Nhắn cho Claude..." class="flex-1 resize-none bg-transparent outline-none text-sm text-[#2d2a26] placeholder-[#8c857b] max-h-24 py-1"></textarea>
+            <button id="send-btn" class="ml-2 mb-0.5 p-1.5 rounded-lg bg-[#cc785c] text-white hover:bg-[#b5674c] transition-colors shrink-0">
                 <svg class="w-4 h-4 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
             </button>
         </div>
-        <div class="text-center text-[10px] text-[#8c857b] mt-2">Hệ thống xử lý cục bộ bằng Vector 16D & Markov 3</div>
     </footer>
 
-<!-- Header chuẩn Claude (Thêm nút tải file data.json) -->
-<header class="flex items-center justify-between px-4 py-3 border-b border-[#e5e0d8] bg-[#fdfbf7] shrink-0">
-    <div class="flex items-center space-x-2">
-        <span class="text-xl font-bold tracking-tight text-[#2d2a26]">Claude</span>
-        <span class="text-xs px-2 py-0.5 rounded-full bg-[#f0ede6] text-[#6b655d] font-medium">Mini 16D</span>
-    </div>
-    
-    <div class="flex items-center space-x-1">
-        <!-- Nút Tải file data.json mới về máy -->
-        <button id="download-json-btn" title="Tải file data.json" class="p-2 text-[#6b655d] hover:text-[#2d2a26] rounded-lg">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-        </button>
-        
-        <button id="new-chat-btn" class="p-2 text-[#6b655d] hover:text-[#2d2a26] rounded-lg">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-        </button>
-    </div>
-</header>
-
-
-    <!-- Liên kết file JS riêng -->
     <script src="script.js"></script>
 </body>
 </html>
