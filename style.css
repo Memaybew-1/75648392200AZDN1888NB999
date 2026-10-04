@@ -14,7 +14,7 @@ body {
 
 /* Đảm bảo khung nhìn di động không bị lẹm */
 html, body {
-    height: 100dvh;
+    height: 100vh;
     margin: 0;
     padding: 0;
 }

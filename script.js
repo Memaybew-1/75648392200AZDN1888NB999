@@ -144,14 +144,9 @@ class SmartMarkov16 {
 // Dữ liệu mẫu ban đầu
 const defaultDataSet = [
     {
-        "text": "xin chào tôi là trợ lý ảo phiên bản di động",
+        "text": "xin chào",
         "vector": [0.05, -0.12, 0.08, 0.01, -0.03, 0.09, -0.07, 0.02, 0.04, -0.06, 0.11, -0.02, 0.05, -0.09, 0.03, -0.01],
         "weight": 0.8
-    },
-    {
-        "text": "hôm nay giao diện trên điện thoại của bạn rất mượt mà",
-        "vector": [-0.04, 0.07, -0.02, 0.11, -0.09, 0.03, 0.06, -0.05, 0.01, 0.08, -0.03, 0.04, -0.07, 0.02, -0.06, 0.10],
-        "weight": 0.9
     }
 ];
 
