@@ -1,0 +1,26 @@
+/* Thiết lập màu sắc và font chữ chuẩn Claude */
+:root {
+    --claude-bg: #f9f6f0;
+    --claude-card: #fdfbf7;
+    --claude-text: #2d2a26;
+    --claude-accent: #cc785c;
+}
+
+body {
+    background-color: var(--claude-bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--claude-text);
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Tùy chỉnh thanh cuộn cho gọn gàng trên mobile */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #d3cdc4;
+    border-radius: 4px;
+}
