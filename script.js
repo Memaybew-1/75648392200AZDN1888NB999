@@ -3,10 +3,16 @@ class SmartMarkov16 {
         this.dim = dimension;
         this.wordVectors = {}; 
         this.wordWeights = {}; 
-        this.chain = {};       
+        
+        // Markov đa bậc (3 -> 2 -> 1)
+        this.chain3 = {}; 
+        this.chain2 = {}; 
+        this.chain1 = {}; 
     }
 
-// 1. Cộng hai vector (v1 + v2)
+    // --- BỘ HÀM TOÁN HỌC VECTOR (CỘNG, TRỪ, TỈ LỆ, KHOẢNG CÁCH) ---
+
+    // 1. Cộng hai vector (v1 + v2)
     vectorAdd(v1, v2) {
         let result = new Array(this.dim);
         for (let i = 0; i < this.dim; i++) {
@@ -24,7 +30,7 @@ class SmartMarkov16 {
         return result;
     }
 
-    // 3. Nhân vector với một hằng số (scalar multiplication)
+    // 3. Nhân vector với một hằng số
     vectorMultiplyScalar(v, scalar) {
         let result = new Array(this.dim);
         for (let i = 0; i < this.dim; i++) {
@@ -33,7 +39,7 @@ class SmartMarkov16 {
         return result;
     }
 
-    // 4. Tính độ dài (Magnitude / Norm) của vector
+    // 4. Tính độ dài (Magnitude) của vector
     vectorMagnitude(v) {
         let sum = 0;
         for (let i = 0; i < this.dim; i++) {
@@ -42,7 +48,7 @@ class SmartMarkov16 {
         return Math.sqrt(sum);
     }
 
-    // 5. Tính độ tương đồng Cosine giữa 2 vector (đo góc lệch hướng giữa 2 vector)
+    // 5. Tính độ tương đồng Cosine giữa 2 vector
     cosineSimilarity(v1, v2) {
         let dotProduct = 0;
         let mag1 = 0;
@@ -58,7 +64,8 @@ class SmartMarkov16 {
         return dotProduct / (mag1 * mag2);
     }
 
-    // Gán 16 vector ngẫu nhiên từ -1.0 đến 1.0 cho từ độc lập
+    // --- KẾT THÚC HÀM TOÁN HỌC VECTOR ---
+
     initVector() {
         let vec = new Array(this.dim);
         for (let i = 0; i < this.dim; i++) {
@@ -67,26 +74,11 @@ class SmartMarkov16 {
         return vec;
     }
 
-    // Đánh giá trọng số từ -1.0 đến 1.0
-    calculateImportance(word, allWords) {
-        if (word.length <= 2) return -0.3; // Từ ngắn, ít quan trọng
-        let count = allWords.filter(w => w === word).length;
-        let frequency = count / allWords.length;
-        let weight = 1.0 - (frequency * 5);
-        if (weight < -1.0) weight = -1.0;
-        if (weight > 1.0) weight = 1.0;
-        return parseFloat(weight.toFixed(2));
-    }
-
-    // Huấn luyện từ mảng dữ liệu (tách nhỏ câu thành các từ đơn)
+    // Huấn luyện Markov đa bậc
     train(dataSet) {
-        let allWordsFlatten = [];
-
         dataSet.forEach(item => {
             let words = item.text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/).filter(w => w.length > 0);
-            allWordsFlatten.push(...words);
             
-            // Gán vector 16 chiều cho từng từ tách rời nếu chưa có
             words.forEach(word => {
                 if (!this.wordVectors[word]) {
                     this.wordVectors[word] = item.vector || this.initVector();
@@ -95,74 +87,153 @@ class SmartMarkov16 {
             });
         });
 
-        // Xây dựng chuỗi Markov bậc 3 dựa trên các từ đã tách
         dataSet.forEach(item => {
             const words = item.text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/).filter(w => w.length > 0);
-            if (words.length < 4) return;
+            if (words.length < 2) return;
 
-            for (let i = 0; i < words.length - 3; i++) {
-                const key = `${words[i]} ${words[i+1]} ${words[i+2]}`;
-                const nextWord = words[i+3];
-
-                if (!this.chain[key]) this.chain[key] = [];
-                
-                let weight = this.wordWeights[nextWord] || 0.0;
+            for (let i = 0; i < words.length; i++) {
+                let weight = this.wordWeights[words[i]] || 0.0;
                 let multiplier = weight > 0 ? Math.floor(weight * 3) + 1 : 1;
-                
-                for (let m = 0; m < multiplier; m++) {
-                    this.chain[key].push(nextWord);
+
+                // Bậc 1
+                if (i < words.length - 1) {
+                    let k1 = words[i];
+                    let n1 = words[i+1];
+                    if (!this.chain1[k1]) this.chain1[k1] = [];
+                    for(let m=0; m<multiplier; m++) this.chain1[k1].push(n1);
+                }
+
+                // Bậc 2
+                if (i < words.length - 2) {
+                    let k2 = `${words[i]} ${words[i+1]}`;
+                    let n2 = words[i+2];
+                    if (!this.chain2[k2]) this.chain2[k2] = [];
+                    for(let m=0; m<multiplier; m++) this.chain2[k2].push(n2);
+                }
+
+                // Bậc 3
+                if (i < words.length - 3) {
+                    let k3 = `${words[i]} ${words[i+1]} ${words[i+2]}`;
+                    let n3 = words[i+3];
+                    if (!this.chain3[k3]) this.chain3[k3] = [];
+                    for(let m=0; m<multiplier; m++) this.chain3[k3].push(n3);
                 }
             }
         });
-        console.log("🚀 Đã train xong Vector 16D và Markov bậc 3 với các từ được tách riêng!");
+        console.log("🚀 Đã train thành công với không gian Vector 16D và Markov đa bậc!");
     }
 
+    // Sinh câu với cơ chế hạ bậc linh hoạt
+    // Sinh câu trả lời thông minh: KHÔNG lặp lại nguyên câu của user ở đầu
     generate(seedWords, maxWords = 15) {
         let words = seedWords.toLowerCase().trim().split(/\s+/).filter(w => w.length > 0);
-        if (words.length < 3) words = ["xin", "chào", "bạn"];
+        if (words.length === 0) words = ["xin"];
 
-        let result = [...words];
+        let result = [];
+        let startKey = null;
+
+        // 1. Cố gắng tìm chuỗi Markov khớp với từ cuối của user làm điểm xuất phát tự nhiên
+        if (words.length >= 3) {
+            let k3 = `${words[words.length-3]} ${words[words.length-2]} ${words[words.length-1]}`;
+            if (this.chain3[k3] && this.chain3[k3].length > 0) {
+                result = k3.split(' ');
+                startKey = k3;
+            }
+        }
+        if (!startKey && words.length >= 2) {
+            let k2 = `${words[words.length-2]} ${words[words.length-1]}`;
+            if (this.chain2[k2] && this.chain2[k2].length > 0) {
+                result = k2.split(' ');
+                startKey = k2;
+            }
+        }
+        if (!startKey && words.length >= 1) {
+            let k1 = words[words.length-1];
+            if (this.chain1[k1] && this.chain1[k1].length > 0) {
+                result = [k1];
+                startKey = k1;
+            }
+        }
+
+        // 2. Nếu không khớp từ nào, chọn ngẫu nhiên một từ khóa làm điểm bắt đầu mới hoàn toàn
+        if (result.length === 0) {
+            let allKeys1 = Object.keys(this.chain1);
+            if (allKeys1.length === 0) return "Xin chào! Hãy dạy tôi thêm dữ liệu nhé.";
+            let randomKey = allKeys1[Math.floor(Math.random() * allKeys1.length)];
+            result.push(randomKey);
+        }
+
+        // 3. Tiếp tục sinh chuỗi tiếp theo từ điểm xuất phát độc lập đó
         for (let i = 0; i < maxWords; i++) {
             const len = result.length;
-            const key = `${result[len-3]} ${result[len-2]} ${result[len-1]}`;
-            const nextOptions = this.chain[key];
+            let nextOptions = null;
 
-            if (!nextOptions || !nextOptions.length) break;
+            if (len >= 3) {
+                let key3 = `${result[len-3]} ${result[len-2]} ${result[len-1]}`;
+                if (this.chain3[key3] && this.chain3[key3].length > 0) nextOptions = this.chain3[key3];
+            }
+            if (!nextOptions && len >= 2) {
+                let key2 = `${result[len-2]} ${result[len-1]}`;
+                if (this.chain2[key2] && this.chain2[key2].length > 0) nextOptions = this.chain2[key2];
+            }
+            if (!nextOptions && len >= 1) {
+                let key1 = result[len-1];
+                if (this.chain1[key1] && this.chain1[key1].length > 0) nextOptions = this.chain1[key1];
+            }
+
+            if (!nextOptions || nextOptions.length === 0) {
+                let allKeys1 = Object.keys(this.chain1);
+                let randomKey = allKeys1[Math.floor(Math.random() * allKeys1.length)];
+                nextOptions = this.chain1[randomKey];
+            }
 
             let validOptions = nextOptions.filter(w => (this.wordWeights[w] || 0) >= -0.1);
             if (!validOptions.length) validOptions = nextOptions;
 
             const nextWord = validOptions[Math.floor(Math.random() * validOptions.length)];
+            
+            // Tránh lặp từ liên tục
+            if (result[result.length - 1] === nextWord) continue;
             result.push(nextWord);
         }
 
         let finalSentence = result.join(' ');
         return finalSentence.charAt(0).toUpperCase() + finalSentence.slice(1) + '.';
     }
+    
 }
-
-// Dữ liệu mẫu ban đầu
-const defaultDataSet = [
-    {
-        "text": "xin chào",
-        "vector": [0.05, -0.12, 0.08, 0.01, -0.03, 0.09, -0.07, 0.02, 0.04, -0.06, 0.11, -0.02, 0.05, -0.09, 0.03, -0.01],
-        "weight": 0.8
-    }
-];
 
 const ai = new SmartMarkov16(16);
 
-function initApp() {
-    let combinedData = [...defaultDataSet];
+// Khởi tạo chỉ dựa trên data.json và LocalStorage (ĐÃ XÓA SẠCH DEFAULT DATASET)
+async function initApp() {
+    let combinedData = [];
+    try {
+        const response = await fetch('data.json');
+        const fileData = await response.json();
+        if (Array.isArray(fileData) && fileData.length > 0) {
+            combinedData = fileData.map(item => typeof item === 'string' ? { text: item } : item);
+        }
+    } catch (e) {
+        console.log("File data.json trống hoặc chưa tải được.");
+    }
+
     const savedLocalChats = localStorage.getItem('user_learned_data');
     if (savedLocalChats) {
-        combinedData.push(...JSON.parse(savedLocalChats));
+        JSON.parse(savedLocalChats).forEach(localItem => {
+            if (!combinedData.some(item => item.text === localItem.text)) {
+                combinedData.push(localItem);
+            }
+        });
     }
-    ai.train(combinedData);
+
+    if (combinedData.length > 0) {
+        ai.train(combinedData);
+    }
 }
 initApp();
 
-// --- XỬ LÝ GIAO DIỆN & LƯU INPUT VÀO DATA.JSON ---
+// Giao diện & Xử lý sự kiện
 const chatContainer = document.getElementById('chat-container');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
@@ -194,19 +265,16 @@ function handleSend() {
     appendMessage('user', text);
     userInput.value = '';
 
-    // Tạo đối tượng dữ liệu mới gồm text, vector 16 chiều ngẫu nhiên và trọng số
     const newItem = {
         text: text,
         vector: ai.initVector(),
         weight: 0.95
     };
 
-    // Lưu vào LocalStorage
     let existingSaved = JSON.parse(localStorage.getItem('user_learned_data') || '[]');
     existingSaved.push(newItem);
     localStorage.setItem('user_learned_data', JSON.stringify(existingSaved));
 
-    // Huấn luyện bổ sung ngay lập tức
     ai.train([newItem]);
 
     setTimeout(() => {
@@ -223,9 +291,17 @@ userInput.addEventListener('keydown', (e) => {
     }
 });
 
-// --- NÚT TẢI FILE DATA.JSON CHUẨN CẤU TRÚC ---
-document.getElementById('download-json-btn').addEventListener('click', () => {
-    let allDataToExport = [...defaultDataSet];
+// Nút tải file data.json xuất toàn bộ dữ liệu hiện có
+document.getElementById('download-json-btn').addEventListener('click', async () => {
+    let allDataToExport = [];
+    try {
+        const response = await fetch('data.json');
+        const fileData = await response.json();
+        if (Array.isArray(fileData)) {
+            allDataToExport = fileData.map(item => typeof item === 'string' ? { text: item } : item);
+        }
+    } catch (e) {}
+
     const savedLocalChats = localStorage.getItem('user_learned_data');
     if (savedLocalChats) {
         JSON.parse(savedLocalChats).forEach(localItem => {
