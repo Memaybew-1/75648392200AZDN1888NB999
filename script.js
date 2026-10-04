@@ -1,4 +1,3 @@
-// Hàm tiện ích random khoảng số (đã bổ sung để chạy được randomRange)
 function randomRange(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -8,36 +7,18 @@ class SmartMarkov16 {
         this.dim = dimension;
         this.wordVectors = {}; 
         this.wordWeights = {}; 
-        this.wordUnusedCount = {}; // Thêm biến đếm số lần bị bỏ quên cho mỗi từ
+        this.wordUnusedCount = {}; 
         
         this.chain3 = {}; 
         this.chain2 = {}; 
         this.chain1 = {}; 
     }
 
-    // --- TOÁN HỌC VECTOR ---
+    // --- TOÁN HỌC VECTOR 16D ---
     vectorAdd(v1, v2) {
         let result = new Array(this.dim);
         for (let i = 0; i < this.dim; i++) result[i] = v1[i] + v2[i];
         return result;
-    }
-
-    vectorSubtract(v1, v2) {
-        let result = new Array(this.dim);
-        for (let i = 0; i < this.dim; i++) result[i] = v1[i] - v2[i];
-        return result;
-    }
-
-    vectorMultiplyScalar(v, scalar) {
-        let result = new Array(this.dim);
-        for (let i = 0; i < this.dim; i++) result[i] = v[i] * scalar;
-        return result;
-    }
-
-    vectorMagnitude(v) {
-        let sum = 0;
-        for (let i = 0; i < this.dim; i++) sum += v[i] * v[i];
-        return Math.sqrt(sum);
     }
 
     cosineSimilarity(v1, v2) {
@@ -61,23 +42,34 @@ class SmartMarkov16 {
         return vec;
     }
 
-    // Huấn luyện Markov đa bậc kèm quản lý trọng số động
+    // Tính Vector đại diện cho cả một câu
+    getSentenceVector(sentence) {
+        let words = sentence.toLowerCase().replace(/[./#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/).filter(w => w.length > 0);
+        let vec = new Array(this.dim).fill(0);
+        let count = 0;
+        words.forEach(w => {
+            if (this.wordVectors[w]) {
+                vec = this.vectorAdd(vec, this.wordVectors[w]);
+                count++;
+            }
+        });
+        return count > 0 ? vec : this.initVector();
+    }
+
     train(dataSet) {
         dataSet.forEach(item => {
-            let words = item.text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/).filter(w => w.length > 0);
+            let words = item.text.toLowerCase().replace(/[./#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/).filter(w => w.length > 0);
             
             words.forEach(word => {
                 if (!this.wordVectors[word]) {
                     this.wordVectors[word] = item.vector || this.initVector();
                     this.wordWeights[word] = item.weight !== undefined ? item.weight : 0.5;
-                } else {
-                    this.wordWeights[word] = Math.min(1.0, this.wordWeights[word] + 0.02);
                 }
             });
         });
 
         dataSet.forEach(item => {
-            const words = item.text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/).filter(w => w.length > 0);
+            const words = item.text.toLowerCase().replace(/[./#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/).filter(w => w.length > 0);
             if (words.length < 2) return;
 
             for (let i = 0; i < words.length; i++) {
@@ -93,85 +85,122 @@ class SmartMarkov16 {
 
                 // Bậc 2
                 if (i < words.length - 2) {
-                    let k2 = `${words[i]} ${words[i+1]}`, n2 = words[i+2];
+                    let k2 = `${words[i]}${words[i+1]}`, n2 = words[i+2];
                     if (!this.chain2[k2]) this.chain2[k2] = [];
                     for(let m = 0; m < multiplier; m++) this.chain2[k2].push(n2);
                 }
 
                 // Bậc 3
                 if (i < words.length - 3) {
-                    let k3 = `${words[i]} ${words[i+1]} ${words[i+2]}`, n3 = words[i+3];
+                    let k3 = `${words[i]} ${words[i+1]}${words[i+2]}`, n3 = words[i+3];
                     if (!this.chain3[k3]) this.chain3[k3] = [];
                     for(let m = 0; m < multiplier; m++) this.chain3[k3].push(n3);
                 }
             }
         });
-        console.log("🚀 Đã train xong với hệ thống Trọng số động (Dynamic Weight)!");
     }
 
-    generate(seedWords, maxWords = randomRange(25, 50)) {
+    // Sinh 1 câu đơn lẻ (Đã sửa lỗi nhại lại từ người dùng)
+    generateSingle(seedWords, maxWords) {
         let words = seedWords.toLowerCase().trim().split(/\s+/).filter(w => w.length > 0);
         if (words.length === 0) return "";
 
-        let result = [];
-        let startKey = null;
+        let history = []; // Lưu dấu để tra cứu Markov
+        let result = [];  // Chứa câu sinh ra thực tế (không dính từ người dùng)
+        
+        let startNextOptions = null;
 
         if (words.length >= 3) {
-            let k3 = `${words[words.length-3]} ${words[words.length-2]} ${words[words.length-1]}`;
-            if (this.chain3[k3] && this.chain3[k3].length > 0) { result = k3.split(' '); startKey = k3; }
+            let k3 = `${words[words.length-3]} ${words[words.length-2]}${words[words.length-1]}`;
+            if (this.chain3[k3] && this.chain3[k3].length > 0) {
+                history = [words[words.length-3], words[words.length-2], words[words.length-1]];
+                startNextOptions = this.chain3[k3];
+            }
         }
-        if (!startKey && words.length >= 2) {
-            let k2 = `${words[words.length-2]} ${words[words.length-1]}`;
-            if (this.chain2[k2] && this.chain2[k2].length > 0) { result = k2.split(' '); startKey = k2; }
+        if (!startNextOptions && words.length >= 2) {
+            let k2 = `${words[words.length-2]}${words[words.length-1]}`;
+            if (this.chain2[k2] && this.chain2[k2].length > 0) {
+                history = [words[words.length-2], words[words.length-1]];
+                startNextOptions = this.chain2[k2];
+            }
         }
-        if (!startKey && words.length >= 1) {
+        if (!startNextOptions && words.length >= 1) {
             let k1 = words[words.length-1];
-            if (this.chain1[k1] && this.chain1[k1].length > 0) { result = [k1]; startKey = k1; }
+            if (this.chain1[k1] && this.chain1[k1].length > 0) {
+                history = [k1];
+                startNextOptions = this.chain1[k1];
+            }
         }
 
-        if (result.length === 0) {
-            return "...\n(Không tìm thấy dữ liệu liên kết phù hợp).";
-        }
+        if (!startNextOptions || startNextOptions.length === 0) return "";
 
-        for (let i = 0; i < maxWords; i++) {
-            const len = result.length;
+        // Chọn từ đầu tiên của BOT (Không đưa từ của USER vào result)
+        let firstWord = startNextOptions[Math.floor(Math.random() * startNextOptions.length)];
+        result.push(firstWord);
+        history.push(firstWord);
+
+        for (let i = 1; i < maxWords; i++) {
+            const hLen = history.length;
             let nextOptions = null;
 
-            if (len >= 3) {
-                let key3 = `${result[len-3]} ${result[len-2]}${result[len-1]}`;
+            if (hLen >= 3) {
+                let key3 = `${history[hLen-3]} ${history[hLen-2]}${history[hLen-1]}`;
                 if (this.chain3[key3] && this.chain3[key3].length > 0) nextOptions = this.chain3[key3];
             }
-            if (!nextOptions && len >= 2) {
-                let key2 = `${result[len-2]}${result[len-1]}`;
+            if (!nextOptions && hLen >= 2) {
+                let key2 = `${history[hLen-2]}${history[hLen-1]}`;
                 if (this.chain2[key2] && this.chain2[key2].length > 0) nextOptions = this.chain2[key2];
             }
-            if (!nextOptions && len >= 1) {
-                let key1 = result[len-1];
+            if (!nextOptions && hLen >= 1) {
+                let key1 = history[hLen-1];
                 if (this.chain1[key1] && this.chain1[key1].length > 0) nextOptions = this.chain1[key1];
             }
 
-            if (!nextOptions || nextOptions.length === 0) {
-                break; 
-            }
+            if (!nextOptions || nextOptions.length === 0) break; 
 
-            let validOptions = nextOptions.filter(w => (this.wordWeights[w] || 0.5) >= -0.1);
-            if (!validOptions.length) validOptions = nextOptions;
-
-            const nextWord = validOptions[Math.floor(Math.random() * validOptions.length)];
+            const nextWord = nextOptions[Math.floor(Math.random() * nextOptions.length)];
             
-            if (this.wordWeights[nextWord] !== undefined) {
-                this.wordWeights[nextWord] = Math.min(1.0, this.wordWeights[nextWord] + 0.03);
-            }
-
             if (result[result.length - 1] === nextWord) break;
             result.push(nextWord);
+            history.push(nextWord);
         }
 
         let finalSentence = result.join(' ');
-        return finalSentence.charAt(0).toUpperCase() + finalSentence.slice(1); //+ '.';
+        return finalSentence ? finalSentence.charAt(0).toUpperCase() + finalSentence.slice(1) : "";
     }
 
-    // --- ĐÃ ĐƯA HÀM DECAY VỀ ĐÚNG BÊN TRONG CLASS ---
+    // Cơ chế TOP 3: Sinh 3 câu ứng viên, xếp hạng theo Cosine Similarity và chọn câu tốt nhất
+    generateBestOf3(seedWords, maxWords = randomRange(15, 35)) {
+        let candidates = [];
+        let userVec = this.getSentenceVector(seedWords);
+
+        // Sinh 3 câu ứng viên khác nhau
+        for (let i = 0; i < 5 && candidates.length < 3; i++) {
+            let sentence = this.generateSingle(seedWords, maxWords);
+            if (sentence && !candidates.includes(sentence)) {
+                candidates.push(sentence);
+            }
+        }
+
+        if (candidates.length === 0) {
+            return "...\n(Tôi chưa hiểu ý bạn lắm, hãy dạy thêm cho tôi nhé!).";
+        }
+
+        // Đánh giá điểm Cosine Similarity của từng câu ứng viên so với câu người dùng
+        let scoredCandidates = candidates.map(candidate => {
+            let candidateVec = this.getSentenceVector(candidate);
+            let score = this.cosineSimilarity(userVec, candidateVec);
+            return { sentence: candidate, score: score };
+        });
+
+        // Sắp xếp giảm dần theo điểm tương đồng
+        scoredCandidates.sort((a, b) => b.score - a.score);
+
+        // Chọn ngẫu nhiên 1 trong Top các câu có điểm cao nhất
+        let topPick = scoredCandidates[0].sentence;
+        return topPick;
+    }
+
     decayWeights(currentTurnWords) {
         for (let word in this.wordWeights) {
             if (currentTurnWords.includes(word)) {
@@ -186,9 +215,8 @@ class SmartMarkov16 {
         }
     }
 } 
-// ===============================================
 
-const ai = new SmartMarkov16(16);
+let ai = new SmartMarkov16(16);
 
 async function initApp() {
     let combinedData = [];
@@ -211,6 +239,12 @@ async function initApp() {
 
     if (combinedData.length > 0) {
         ai.train(combinedData);
+    }
+
+    const savedWeights = localStorage.getItem('bot_word_weights');
+    if (savedWeights) {
+        const parsedWeights = JSON.parse(savedWeights);
+        Object.assign(ai.wordWeights, parsedWeights);
     }
 }
 initApp();
@@ -249,7 +283,7 @@ function handleSend() {
     const newItem = {
         text: text,
         vector: ai.initVector(),
-        weight: 0.95
+        weight: 0.8
     };
 
     let existingSaved = JSON.parse(localStorage.getItem('user_learned_data') || '[]');
@@ -260,12 +294,14 @@ function handleSend() {
     ai.train([newItem]);
 
     setTimeout(() => {
-        let reply = ai.generate(text, randomRange(15, 50));
+        // Gọi hàm Top 3 để chọn câu trả lời hay nhất
+        let reply = ai.generateBestOf3(text, randomRange(15, 35));
         appendMessage('bot', reply);
 
         const turnText = text + " " + reply;
-        const turnWords = turnText.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/);
+        const turnWords = turnText.toLowerCase().replace(/[./#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/);
         ai.decayWeights(turnWords);
+        localStorage.setItem('bot_word_weights', JSON.stringify(ai.wordWeights));
     }, 400);
 }
 
@@ -278,15 +314,14 @@ userInput.addEventListener('keydown', (e) => {
 });
 
 const newChatBtn = document.getElementById('new-chat-btn'); 
-
 if (newChatBtn) {
     newChatBtn.addEventListener('click', () => {
         localStorage.removeItem('user_learned_data');
+        localStorage.removeItem('bot_word_weights');
         chatContainer.innerHTML = '';
         ai = new SmartMarkov16(16);
         initApp();
-        appendMessage('bot', "Đã quên hết lịch sử chat tạm! Tôi đã trở về trạng thái sạch sẽ.");
-        console.log("🧹 Đã xóa sạch localStorage, bot đã 'quên' các dữ liệu chat vừa rồi!");
+        appendMessage('bot', "Đã xóa lịch sử chat và reset trọng số!");
     });
 }
 
@@ -308,6 +343,16 @@ document.getElementById('download-json-btn').addEventListener('click', async () 
             }
         });
     }
+
+    allDataToExport = allDataToExport.map(item => {
+        let words = item.text.toLowerCase().split(/\s+/);
+        let avgWeight = words.reduce((acc, w) => acc + (ai.wordWeights[w] || 0.5), 0) / words.length;
+        return {
+            text: item.text,
+            vector: item.vector || ai.initVector(),
+            weight: parseFloat(avgWeight.toFixed(2))
+        };
+    });
 
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allDataToExport, null, 2));
     const downloadAnchor = document.createElement('a');
