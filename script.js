@@ -93,14 +93,14 @@ class SmartMarkov16 {
 
                 // Bậc 2
                 if (i < words.length - 2) {
-                    let k2 = `${words[i]}${words[i+1]}`, n2 = words[i+2];
+                    let k2 = `${words[i]} ${words[i+1]}`, n2 = words[i+2];
                     if (!this.chain2[k2]) this.chain2[k2] = [];
                     for(let m = 0; m < multiplier; m++) this.chain2[k2].push(n2);
                 }
 
                 // Bậc 3
                 if (i < words.length - 3) {
-                    let k3 = `${words[i]} ${words[i+1]}${words[i+2]}`, n3 = words[i+3];
+                    let k3 = `${words[i]} ${words[i+1]} ${words[i+2]}`, n3 = words[i+3];
                     if (!this.chain3[k3]) this.chain3[k3] = [];
                     for(let m = 0; m < multiplier; m++) this.chain3[k3].push(n3);
                 }
@@ -117,11 +117,11 @@ class SmartMarkov16 {
         let startKey = null;
 
         if (words.length >= 3) {
-            let k3 = `${words[words.length-3]} ${words[words.length-2]}${words[words.length-1]}`;
+            let k3 = `${words[words.length-3]} ${words[words.length-2]} ${words[words.length-1]}`;
             if (this.chain3[k3] && this.chain3[k3].length > 0) { result = k3.split(' '); startKey = k3; }
         }
         if (!startKey && words.length >= 2) {
-            let k2 = `${words[words.length-2]}${words[words.length-1]}`;
+            let k2 = `${words[words.length-2]} ${words[words.length-1]}`;
             if (this.chain2[k2] && this.chain2[k2].length > 0) { result = k2.split(' '); startKey = k2; }
         }
         if (!startKey && words.length >= 1) {
