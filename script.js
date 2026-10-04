@@ -213,8 +213,26 @@ class SmartMarkov16 {
                 }
             }
         }
+    } 
+
+    // Cập nhật các giá trị trong mảng Vector để các từ đi chung dịch lại gần nhau
+    updateVectors(turnWords, learningRate = 0.05) {
+        if (turnWords.length < 2) return;
+
+        // Tính Vector trung bình của ngữ cảnh hiện tại
+        let contextVec = this.getSentenceVector(turnWords.join(' '));
+
+        turnWords.forEach(word => {
+            if (this.wordVectors[word]) {
+                // Công thức Vector Shift: v_new = v_old + learningRate * (contextVec - v_old)
+                for (let i = 0; i < this.dim; i++) {
+                    let diff = contextVec[i] - this.wordVectors[word][i];
+                    this.wordVectors[word][i] = parseFloat((this.wordVectors[word][i] + learningRate * diff).toFixed(4));
+                }
+            }
+        });
     }
-} 
+}
 
 let ai = new SmartMarkov16(16);
 
@@ -246,6 +264,14 @@ async function initApp() {
         const parsedWeights = JSON.parse(savedWeights);
         Object.assign(ai.wordWeights, parsedWeights);
     }
+    
+        // Tải bảng Vector đã được cập nhật từ localStorage
+    const savedVectors = localStorage.getItem('bot_word_vectors');
+    if (savedVectors) {
+        const parsedVectors = JSON.parse(savedVectors);
+        Object.assign(ai.wordVectors, parsedVectors);
+    }
+    
 }
 initApp();
 
@@ -302,6 +328,10 @@ function handleSend() {
         const turnWords = turnText.toLowerCase().replace(/[./#!$%^&*;:{}=\-_`~()]/g, "").split(/\s+/);
         ai.decayWeights(turnWords);
         localStorage.setItem('bot_word_weights', JSON.stringify(ai.wordWeights));
+
+        ai.updateVectors(turnWords);
+        localStorage.setItem('bot_word_vectors', JSON.stringify(ai.wordVectors));
+        
     }, 400);
 }
 
