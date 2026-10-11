@@ -20,7 +20,13 @@ jobs:
           echo "Found ZIP: $ZIP_FILE"
           unzip -o "$ZIP_FILE" -d extracted_project
           shopt -s dotglob
-          mv extracted_project/*/* . 2>/dev/null || mv extracted_project/* . 2>/dev/null || true
+          # Di chuyển toàn bộ tệp bên trong thư mục giải nén ra ngoài thư mục gốc
+          FIRST_DIR=$(find extracted_project -mindepth 1 -maxdepth 1 -type d | head -n 1)
+          if [ -n "$FIRST_DIR" ]; then
+            cp -r "$FIRST_DIR"/* .
+          else
+            cp -r extracted_project/* .
+          fi
           rm -rf extracted_project
         fi
 
