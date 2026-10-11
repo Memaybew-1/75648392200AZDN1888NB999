@@ -19,11 +19,9 @@ jobs:
         if [ -n "$ZIP_FILE" ]; then
           echo "Found ZIP: $ZIP_FILE"
           unzip -o "$ZIP_FILE" -d extracted_project
-          if [ -d "extracted_project/app" ]; then
-            cp -r extracted_project/* .
-          else
-            cp -r extracted_project/*/* . || true
-          fi
+          shopt -s dotglob
+          mv extracted_project/*/* . 2>/dev/null || mv extracted_project/* . 2>/dev/null || true
+          rm -rf extracted_project
         fi
 
     - name: Set up JDK 17
