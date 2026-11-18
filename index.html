@@ -10,20 +10,47 @@
 
     <h2>miniChatbot</h2>
 
-    <div id="chat"></div>
+    <!-- Khung hội thoại -->
+    <div id="chat" style="
+        height: 300px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border: 1px solid #aaa;
+        padding: 10px;
+        overflow-wrap: anywhere;
+    "></div>
 
-    <input id="message" type="text" placeholder="Nhập tin nhắn...">
+    <input
+        id="message"
+        type="text"
+        placeholder="Nhập tin nhắn..."
+    >
+
     <button id="send">Gửi</button>
 
     <hr>
 
     <button id="download">Tải bộ nhớ JSON</button>
 
-    <input type="file" id="upload" accept=".json,application/json">
+    <input
+        type="file"
+        id="upload"
+        accept=".json,application/json"
+    >
 
     <h3>Chatbot Learning Data</h3>
-    <pre id="debug"></pre>
+
+    <!-- Khung dữ liệu học -->
+    <pre id="debug" style="
+        max-height: 300px;
+        overflow: auto;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        border: 1px solid #aaa;
+        padding: 10px;
+    "></pre>
 
     <script src="./script.js"></script>
+
 </body>
 </html>

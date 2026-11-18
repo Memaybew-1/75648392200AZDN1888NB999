@@ -13,24 +13,58 @@ function addMessage(sender, text) {
     const line = document.createElement("p");
     line.textContent = sender + ": " + text;
     chat.appendChild(line);
+
+    // Tự cuộn xuống tin nhắn mới nhất
+    chat.scrollTop = chat.scrollHeight;
 }
 
+
 function think(input) {
-    input = input.toLowerCase();
+    const tokenize = text =>
+        text.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
 
-    if (input.includes("xin chào")) {
-        return "Chào bạn!";
+    const inputWords = tokenize(input);
+
+    let bestScore = 0;
+    let bestResponse = null;
+
+    for (const conversation of memory.conversations) {
+        if (
+            typeof conversation.user !== "string" ||
+            typeof conversation.bot !== "string" ||
+            !conversation.bot.trim()
+        ) {
+            continue;
+        }
+
+        const storedWords = tokenize(conversation.user);
+
+        const inputSet = new Set(inputWords);
+        const storedSet = new Set(storedWords);
+
+        const intersection = [...inputSet].filter(
+            word => storedSet.has(word)
+        ).length;
+
+        const union = new Set([
+            ...inputSet,
+            ...storedSet
+        ]).size;
+
+        const score = union === 0 ? 0 : intersection / union;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestResponse = conversation.bot;
+        }
     }
 
-    if (input.includes("bạn là ai")) {
-        return "Tôi là một chatbot.";
+    // Chỉ trả lời nếu độ tương đồng đủ cao
+    if (bestScore >= 0.5) {
+        return bestResponse;
     }
 
-    if (input.includes("bạn thích gì")) {
-        return "Tôi thích học hỏi!";
-    }
-
-    return "Tôi chưa biết trả lời câu này.";
+    return null;
 }
 
 
@@ -153,11 +187,6 @@ function learnBigram() {
 
             // Bỏ qua dữ liệu rỗng hoặc không hợp lệ
             if (typeof sentence !== "string" || !sentence.trim()) {
-                continue;
-            }
-
-            // Bỏ qua câu trả lời mặc định
-            if (sentence === "Tôi chưa biết trả lời câu này.") {
                 continue;
             }
 
