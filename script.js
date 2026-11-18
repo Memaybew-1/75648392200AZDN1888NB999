@@ -48,6 +48,8 @@ function sendMessage() {
         bot: response
     });
 
+    learnBigram();
+
     message.value = "";
     message.focus();
 }
@@ -100,6 +102,9 @@ upload.addEventListener("change", function(event) {
 
             memory = data;
 
+            learnBigram();
+            console.log("Bigram:", bigram);
+
             chat.innerHTML = "";
 
             memory.conversations.forEach(item => {
@@ -118,5 +123,36 @@ upload.addEventListener("change", function(event) {
 
     reader.readAsText(file);
 });
+
+
+// Mô hình Bigram
+let bigram = {};
+
+function learnBigram() {
+    bigram = {};
+
+    // Học từ câu trả lời của Bot
+    for (const conversation of memory.conversations) {
+        const words = conversation.bot
+            .toLowerCase()
+            .match(/[\p{L}\p{N}]+/gu) || [];
+
+        for (let i = 0; i < words.length - 1; i++) {
+            const current = words[i];
+            const next = words[i + 1];
+
+            if (!bigram[current]) {
+                bigram[current] = {};
+            }
+
+            if (!bigram[current][next]) {
+                bigram[current][next] = 0;
+            }
+
+            bigram[current][next]++;
+        }
+    }
+}
+
 
 console.log("Chatbot đã khởi động!");
