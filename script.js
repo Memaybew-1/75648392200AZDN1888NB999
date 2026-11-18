@@ -1,4 +1,4 @@
-
+alert("JavaScript đã được tải!");
 const chat = document.getElementById("chat");
 const message = document.getElementById("message");
 const send = document.getElementById("send");
