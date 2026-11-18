@@ -3,6 +3,7 @@ const chat = document.getElementById("chat");
 const message = document.getElementById("message");
 const send = document.getElementById("send");
 const download = document.getElementById("download");
+const debug = document.getElementById("debug");
 
 let memory = {
     conversations: []
@@ -49,6 +50,8 @@ function sendMessage() {
     });
 
     learnBigram();
+
+    debug.textContent = JSON.stringify(bigram, null, 2);
 
     message.value = "";
     message.focus();
@@ -103,6 +106,9 @@ upload.addEventListener("change", function(event) {
             memory = data;
 
             learnBigram();
+
+            debug.textContent = JSON.stringify(bigram, null, 2);
+
             console.log("Bigram:", bigram);
 
             chat.innerHTML = "";
@@ -153,6 +159,5 @@ function learnBigram() {
         }
     }
 }
-
 
 console.log("Chatbot đã khởi động!");
