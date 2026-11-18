@@ -1,4 +1,4 @@
-alert("JavaScript đã được tải!");
+
 const chat = document.getElementById("chat");
 const message = document.getElementById("message");
 const send = document.getElementById("send");
@@ -78,5 +78,45 @@ message.onkeydown = function(event) {
         sendMessage();
     }
 };
+
+const upload = document.getElementById("upload");
+
+// Nạp bộ nhớ JSON
+upload.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            if (!data.conversations ||
+                !Array.isArray(data.conversations)) {
+                throw new Error("Sai cấu trúc bộ nhớ!");
+            }
+
+            memory = data;
+
+            chat.innerHTML = "";
+
+            memory.conversations.forEach(item => {
+                addMessage("Bạn", item.user);
+                addMessage("Bot", item.bot);
+            });
+
+            alert("Đã nạp " +
+                memory.conversations.length +
+                " cuộc hội thoại!");
+
+        } catch (error) {
+            alert("Không thể đọc bộ nhớ: " + error.message);
+        }
+    };
+
+    reader.readAsText(file);
+});
 
 console.log("Chatbot đã khởi động!");
