@@ -70,10 +70,14 @@ function think(input) {
 }
 
 
+
 function sendMessage() {
     const input = message.value.trim();
 
-    if (input === "") return;
+    if (!input) return;
+
+    // Xóa ô nhập ngay sau khi lấy nội dung
+    message.value = "";
 
     addMessage("Bạn", input);
 
@@ -83,21 +87,21 @@ function sendMessage() {
         addMessage("Bot", response);
     }
 
-    // Luôn lưu cả câu User
+    // Lưu cả hai phía
     memory.conversations.push({
         user: input,
         bot: response
     });
 
-    learnBigram(input);
+    // Tính lại Bigram từ toàn bộ hội thoại
+    learnBigram();
 
-    if (response !== null) {
-        learnBigram(response);
-    }
+    debug.textContent = JSON.stringify(
+        memory.bigram,
+        null,
+        2
+    );
 
-    debug.textContent = JSON.stringify(bigram, null, 2);
-
-    message.value = "";
     message.focus();
 }
 
