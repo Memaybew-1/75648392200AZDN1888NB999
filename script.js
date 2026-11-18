@@ -132,13 +132,16 @@ upload.addEventListener("change", function(event) {
 
 
 // Mô hình Bigram
-let bigram = {};
-
 function learnBigram() {
     bigram = {};
 
-    // Học từ câu trả lời của Bot
     for (const conversation of memory.conversations) {
+
+        // Bỏ qua câu trả lời mặc định
+        if (conversation.bot === "Tôi chưa biết trả lời câu này.") {
+            continue;
+        }
+
         const words = conversation.bot
             .toLowerCase()
             .match(/[\p{L}\p{N}]+/gu) || [];
