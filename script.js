@@ -4,19 +4,16 @@ const message = document.getElementById("message");
 const send = document.getElementById("send");
 const download = document.getElementById("download");
 
-// Bộ nhớ hội thoại
 let memory = {
     conversations: []
 };
 
-// Hiển thị tin nhắn
 function addMessage(sender, text) {
     const line = document.createElement("p");
     line.textContent = sender + ": " + text;
     chat.appendChild(line);
 }
 
-// Bộ não chatbot
 function think(input) {
     input = input.toLowerCase();
 
@@ -35,11 +32,10 @@ function think(input) {
     return "Tôi chưa biết trả lời câu này.";
 }
 
-// Gửi tin nhắn
 function sendMessage() {
     const input = message.value.trim();
 
-    if (input === "") return;
+    if (!input) return;
 
     addMessage("Bạn", input);
 
@@ -47,41 +43,40 @@ function sendMessage() {
 
     addMessage("Bot", response);
 
-    // Ghi vào bộ nhớ
     memory.conversations.push({
         user: input,
         bot: response
     });
 
     message.value = "";
+    message.focus();
 }
 
-// Tải bộ nhớ JSON
 function downloadMemory() {
     const json = JSON.stringify(memory, null, 2);
-
-    const blob = new Blob(
-        [json],
-        { type: "application/json" }
-    );
+    const blob = new Blob([json], {
+        type: "application/json"
+    });
 
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
+
     a.href = url;
     a.download = "memory.json";
-
+    document.body.appendChild(a);
     a.click();
+    a.remove();
 
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-send.addEventListener("click", sendMessage);
+send.onclick = sendMessage;
+download.onclick = downloadMemory;
 
-message.addEventListener("keydown", function(event) {
+message.onkeydown = function(event) {
     if (event.key === "Enter") {
         sendMessage();
     }
-});
+};
 
-download.addEventListener("click", downloadMemory);
+console.log("Chatbot đã khởi động!");
