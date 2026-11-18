@@ -6,8 +6,10 @@ const download = document.getElementById("download");
 const debug = document.getElementById("debug");
 
 let memory = {
-    conversations: []
+    conversations: [],
+    bigram: {}
 };
+
 
 function addMessage(sender, text) {
     const line = document.createElement("p");
@@ -87,7 +89,11 @@ function sendMessage() {
         bot: response
     });
 
-    learnBigram();
+    learnBigram(input);
+
+    if (response !== null) {
+        learnBigram(response);
+    }
 
     debug.textContent = JSON.stringify(bigram, null, 2);
 
@@ -134,81 +140,58 @@ upload.addEventListener("change", function(event) {
     const reader = new FileReader();
 
     reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
+    try {
+        const data = JSON.parse(e.target.result);
 
-            if (!data.conversations ||
-                !Array.isArray(data.conversations)) {
-                throw new Error("Sai cấu trúc bộ nhớ!");
-            }
-
-            memory = data;
-
-            learnBigram();
-
-            debug.textContent = JSON.stringify(bigram, null, 2);
-
-            console.log("Bigram:", bigram);
-
-            chat.innerHTML = "";
-
-            memory.conversations.forEach(item => {
-                addMessage("Bạn", item.user);
-                addMessage("Bot", item.bot);
-            });
-
-            alert("Đã nạp " +
-                memory.conversations.length +
-                " cuộc hội thoại!");
-
-        } catch (error) {
-            alert("Không thể đọc bộ nhớ: " + error.message);
+        if (!data.conversations ||
+            !Array.isArray(data.conversations)) {
+            throw new Error("Sai cấu trúc bộ nhớ!");
         }
-    };
+
+        memory = data;
+
+        // THÊM Ở ĐÂY
+        memory.bigram ??= {};
+
+        chat.innerHTML = "";
+
+        memory.conversations.forEach(item => {
+            addMessage("Bạn", item.user);
+            addMessage("Bot", item.bot);
+        });
+
+        alert("Đã nạp " +
+            memory.conversations.length +
+            " cuộc hội thoại!");
+
+    } catch (error) {
+        alert("Không thể đọc bộ nhớ: " + error.message);
+    }
+};
 
     reader.readAsText(file);
 });
 
 
 // Mô hình Bigram
+function learnBigram(sentence) {
+    const words = sentence
+        .toLowerCase()
+        .match(/[\p{L}\p{N}]+/gu) || [];
 
-function learnBigram() {
-    bigram = {};
+    for (let i = 0; i < words.length - 1; i++) {
+        const current = words[i];
+        const next = words[i + 1];
 
-    for (const conversation of memory.conversations) {
-
-        // Học cả câu User và Bot
-        const sentences = [
-            conversation.user,
-            conversation.bot
-        ];
-
-        for (const sentence of sentences) {
-
-            // Bỏ qua dữ liệu rỗng hoặc không hợp lệ
-            if (typeof sentence !== "string" || !sentence.trim()) {
-                continue;
-            }
-
-            const words = sentence
-                .toLowerCase()
-                .match(/[\p{L}\p{N}]+/gu) || [];
-
-            for (let i = 0; i < words.length - 1; i++) {
-                const current = words[i];
-                const next = words[i + 1];
-
-                if (!bigram[current]) {
-                    bigram[current] = {};
-                }
-
-                if (!bigram[current][next]) {
-                    bigram[current][next] = 0;
-                }
-
-                bigram[current][next]++;
-            }
+        if (!memory.bigram[current]) {
+            memory.bigram[current] = {};
         }
+
+        if (!memory.bigram[current][next]) {
+            memory.bigram[current][next] = 0;
+        }
+
+        memory.bigram[current][next]++;
     }
 }
 
