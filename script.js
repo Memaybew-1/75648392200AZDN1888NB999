@@ -33,17 +33,21 @@ function think(input) {
     return "Tôi chưa biết trả lời câu này.";
 }
 
+
 function sendMessage() {
     const input = message.value.trim();
 
-    if (!input) return;
+    if (input === "") return;
 
     addMessage("Bạn", input);
 
     const response = think(input);
 
-    addMessage("Bot", response);
+    if (response !== null) {
+        addMessage("Bot", response);
+    }
 
+    // Luôn lưu cả câu User
     memory.conversations.push({
         user: input,
         bot: response
@@ -56,6 +60,7 @@ function sendMessage() {
     message.value = "";
     message.focus();
 }
+
 
 function downloadMemory() {
     const json = JSON.stringify(memory, null, 2);
@@ -132,33 +137,48 @@ upload.addEventListener("change", function(event) {
 
 
 // Mô hình Bigram
+
 function learnBigram() {
     bigram = {};
 
     for (const conversation of memory.conversations) {
 
-        // Bỏ qua câu trả lời mặc định
-        if (conversation.bot === "Tôi chưa biết trả lời câu này.") {
-            continue;
-        }
+        // Học cả câu User và Bot
+        const sentences = [
+            conversation.user,
+            conversation.bot
+        ];
 
-        const words = conversation.bot
-            .toLowerCase()
-            .match(/[\p{L}\p{N}]+/gu) || [];
+        for (const sentence of sentences) {
 
-        for (let i = 0; i < words.length - 1; i++) {
-            const current = words[i];
-            const next = words[i + 1];
-
-            if (!bigram[current]) {
-                bigram[current] = {};
+            // Bỏ qua dữ liệu rỗng hoặc không hợp lệ
+            if (typeof sentence !== "string" || !sentence.trim()) {
+                continue;
             }
 
-            if (!bigram[current][next]) {
-                bigram[current][next] = 0;
+            // Bỏ qua câu trả lời mặc định
+            if (sentence === "Tôi chưa biết trả lời câu này.") {
+                continue;
             }
 
-            bigram[current][next]++;
+            const words = sentence
+                .toLowerCase()
+                .match(/[\p{L}\p{N}]+/gu) || [];
+
+            for (let i = 0; i < words.length - 1; i++) {
+                const current = words[i];
+                const next = words[i + 1];
+
+                if (!bigram[current]) {
+                    bigram[current] = {};
+                }
+
+                if (!bigram[current][next]) {
+                    bigram[current][next] = 0;
+                }
+
+                bigram[current][next]++;
+            }
         }
     }
 }
